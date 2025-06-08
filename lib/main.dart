@@ -17,8 +17,16 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => SettingsModel()),
-        ChangeNotifierProvider(create: (_) => UserModel()),
-        ChangeNotifierProvider(create: (_) => TodoModel()),
+        ChangeNotifierProxyProvider<SettingsModel, UserModel>(
+          create: (_) => UserModel(),
+          update: (_, settings, userModel) =>
+              UserModel(settingsModel: settings),
+        ),
+        ChangeNotifierProxyProvider2<SettingsModel, UserModel, TodoModel>(
+          create: (_) => TodoModel(),
+          update: (_, settings, user, todoModel) =>
+              TodoModel(settingsModel: settings, userModel: user),
+        ),
         ProxyProvider<SettingsModel, AuthService>(
           update: (context, settings, _) =>
               AuthService(baseUrl: settings.baseUrl),
@@ -32,7 +40,7 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<UserModel>(
           builder: (context, userModel, child) {
-            // Bug#11: 로그아웃 후 뒤로 가기로 접근 가능 (중간 난이도)
+            // Bug#18: 로그아웃 후 뒤로 가기로 접근 가능 (중간 난이도)
             // 정상적이라면 로그아웃 시 네비게이션 스택을 완전히 초기화해야 함
             // 현재는 단순히 화면만 바뀌어서 뒤로 가기로 이전 화면 접근 가능
             return userModel.isLoggedIn ? TodoScreen() : LoginScreen();

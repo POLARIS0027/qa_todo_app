@@ -23,13 +23,17 @@ class _TodoScreenState extends State<TodoScreen> {
     final todoModel = Provider.of<TodoModel>(context, listen: false);
     final title = _todoController.text;
 
-    // Bug#17: 중복 클릭 방지 없음 - 빠른 연속 클릭 시 중복 생성 (어려운 버그)
+    // Bug#19: 중복 클릭 방지 없음 - 빠른 연속 클릭 시 중복 생성 (어려운 버그)
     await todoModel.addTodo(title);
     _todoController.clear();
   }
 
   void _showEditDialog(BuildContext context, Todo todo) {
     _editController.text = todo.title;
+
+    // Bug#13 구현을 위해 편집 시작 시점에 startEditing 호출
+    final todoModel = Provider.of<TodoModel>(context, listen: false);
+    todoModel.startEditing(todo.id, todo.title);
 
     showDialog(
       context: context,
@@ -42,7 +46,6 @@ class _TodoScreenState extends State<TodoScreen> {
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {
-            // Bug#16: TodoModel의 updateEditingText 호출하지만 UI 업데이트 안됨 (어려운 버그)
             Provider.of<TodoModel>(context, listen: false)
                 .updateEditingText(value);
           },
@@ -58,7 +61,6 @@ class _TodoScreenState extends State<TodoScreen> {
           TextButton(
             onPressed: () {
               final todoModel = Provider.of<TodoModel>(context, listen: false);
-              todoModel.startEditing(todo.id, _editController.text);
               todoModel.saveEdit();
               Navigator.of(context).pop();
             },
@@ -117,7 +119,7 @@ class _TodoScreenState extends State<TodoScreen> {
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
-                // Bug#15: 성능 문제 시뮬레이션 호출 (어려운 버그)
+                // Bug#20: 성능 문제 시뮬레이션 호출 (어려운 버그)
                 todoModel.simulateMemoryLeak();
 
                 if (todoModel.isLoading) {
@@ -157,7 +159,7 @@ class _TodoScreenState extends State<TodoScreen> {
                         ),
                         title: Text(
                           todo.title,
-                          // Bug#10: 17글자 이상 제목 시 UI 오버플로우 (중간 난이도)
+                          // Bug#14: 17글자 이상 제목 시 UI 오버플로우 (중간 난이도)
                           // overflow: TextOverflow.ellipsis, 를 의도적으로 제거하여 텍스트가 넘침
                           maxLines: 1,
                           softWrap: false,

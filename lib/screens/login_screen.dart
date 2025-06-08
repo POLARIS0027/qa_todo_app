@@ -40,12 +40,12 @@ class _LoginScreenState extends State<LoginScreen>
     final success =
         await userModel.login(_emailController.text, _passwordController.text);
 
-    if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/todo');
-    } else if (mounted && !userModel.isLoading) {
-      // 로딩 중이 아닐 때만 에러 메시지 표시
+    // Consumer에서 자동으로 화면 전환이 처리되므로 별도 네비게이션 불필요
+    if (!success && mounted && !userModel.isLoading) {
+      // 상세한 에러 메시지 표시
+      final errorMessage = userModel.errorMessage ?? '로그인에 실패했습니다.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인에 실패했습니다.')),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }
@@ -64,8 +64,10 @@ class _LoginScreenState extends State<LoginScreen>
       );
       _tabController.animateTo(0); // 로그인 탭으로 이동
     } else if (mounted) {
+      // 상세한 에러 메시지 표시
+      final errorMessage = userModel.errorMessage ?? '회원가입에 실패했습니다.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('회원가입에 실패했습니다.')),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }
