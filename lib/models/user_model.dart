@@ -17,14 +17,14 @@ class UserModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Bug#8: 토큰 만료 체크 없음
-  // 앱 재시작 시 토큰 만료 여부를 확인하지 않고 자동 로그인 처리
+  // Bug#8: トークン まれそう チェック ない
+  // アプリ 再起動 時 トークン まれそう どうか 確認せず 自動 ログイン 処理
   UserModel({SettingsModel? settingsModel}) : _settingsModel = settingsModel {
     _checkLoginStatus();
   }
 
-  // Bug#11: 네트워크 실패 시 무한 로딩
-  // 네트워크 연결 실패 시 에러 처리 없이 로딩 상태만 계속 유지
+  // Bug#11: ネットワーク 失敗 時 無限 ローディング
+  // ネットワーク 接続 失敗 時 エラー 処理 なし ローディング 状態 継続 保持
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
@@ -34,37 +34,37 @@ class UserModel extends ChangeNotifier {
       final result = await AuthService.login(baseUrl, email, password);
       if (result['success']) {
         _username = email;
-        _authToken = result['token']; // 토큰 저장
+        _authToken = result['token']; // トークン 保存
         _isLoggedIn = true;
         await _saveLoginInfo(email, _authToken);
         _setLoading(false);
         return true;
       } else {
-        _setError(result['message'] ?? '로그인 실패');
+        _setError(result['message'] ?? 'ログイン失敗');
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      // Bug#11: 네트워크 에러 시 로딩 상태를 끄지 않음
-      // _setLoading(false); // 이 라인을 제거하여 무한 로딩 버그 구현
-      _setError('네트워크 오류: ${e.toString()}');
+      // Bug#11: ネットワークエラー時にローディング状態を解除しない
+      // _setLoading(false); // この行を削除して無限ローディングバグを実装
+      _setError('ネットワークエラー: ${e.toString()}');
       debugPrint('Login error: $e');
       return false;
     }
   }
 
-  // Bug#9: 중복 이메일 허용
-  // Bug#10: 비밀번호 확인 검증 없음
+  // Bug#9: 重複メール許可
+  // Bug#10: パスワード確認検証なし
   Future<bool> signup(
       String email, String password, String confirmPassword) async {
     _setLoading(true);
     _clearError();
 
-    // Bug#10: 비밀번호 확인이 일치하는지 검증하지 않음
+    // Bug#10: パスワード確認が一致するか検証しない
     // if (password != confirmPassword) return false;
 
     try {
-      // Bug#9: 이미 존재하는 이메일인지 확인하지 않음
+      // Bug#9: 既存メールかどうか確認しない
       final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
       debugPrint('Signup baseUrl: $baseUrl');
       debugPrint('SettingsModel is null: ${_settingsModel == null}');
@@ -74,12 +74,12 @@ class UserModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError(result['message'] ?? '회원가입 실패');
+        _setError(result['message'] ?? '会員登録失敗');
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      _setError('네트워크 오류: ${e.toString()}');
+      _setError('ネットワークエラー: ${e.toString()}');
       _setLoading(false);
       return false;
     }

@@ -33,7 +33,7 @@ class SettingsModel extends ChangeNotifier {
     _useHttps = prefs.getBool('use_https') ?? false;
     _timeout = prefs.getInt('timeout') ?? 30;
 
-    // HTTPS 설정과 protocol 동기화
+    // HTTPS 設定と protocol 同期
     _protocol = _useHttps ? 'https' : 'http';
 
     notifyListeners();
@@ -101,7 +101,7 @@ class SettingsModel extends ChangeNotifier {
     await prefs.setInt('timeout', _timeout);
   }
 
-  // 모든 설정을 기본값으로 초기화
+  // すべての設定をデフォルト値にリセット
   Future<void> resetToDefaults() async {
     _serverAddress = 'localhost';
     _serverPort = '3000';
@@ -114,7 +114,7 @@ class SettingsModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 실제 연결 테스트 기능
+  // 実際の接続テスト機能
   Future<bool> testConnection() async {
     try {
       final response = await http.get(
@@ -128,7 +128,7 @@ class SettingsModel extends ChangeNotifier {
     }
   }
 
-  // 완전한 설정 유효성 검사
+  // 完全な設定の有効性検証
   Map<String, String> validateSettings() {
     Map<String, String> errors = {};
 
@@ -155,35 +155,35 @@ class SettingsModel extends ChangeNotifier {
     return errors;
   }
 
-  // 개별 검증 메서드들
+  // 個別の検証メソッド
   String? _validateServerAddress(String address) {
     if (address.isEmpty) {
-      return '서버 주소를 입력하세요';
+      return 'サーバーアドレスを入力してください';
     }
 
-    // localhost 허용
+    // localhost 許可
     if (address.toLowerCase() == 'localhost') {
       return null;
     }
 
-    // IP 주소 형식 검증 (간단한 버전)
-    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+    // IPアドレス形式検証（簡易版）
+    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}[0m$');
     if (ipRegex.hasMatch(address)) {
       final parts = address.split('.');
       for (String part in parts) {
         final num = int.tryParse(part);
         if (num == null || num < 0 || num > 255) {
-          return '올바른 IP 주소 형식이 아닙니다';
+          return '正しいIPアドレス形式ではありません';
         }
       }
       return null;
     }
 
-    // 도메인 이름 형식 검증 (간단한 버전)
+    // ドメイン名形式検証（簡易版）
     final domainRegex = RegExp(
         r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$');
     if (!domainRegex.hasMatch(address)) {
-      return '올바른 서버 주소 형식이 아닙니다';
+      return '正しいサーバーアドレス形式ではありません';
     }
 
     return null;
@@ -191,16 +191,16 @@ class SettingsModel extends ChangeNotifier {
 
   String? _validatePort(String port) {
     if (port.isEmpty) {
-      return '포트를 입력하세요';
+      return 'ポートを入力してください';
     }
 
     final portNum = int.tryParse(port);
     if (portNum == null) {
-      return '포트는 숫자여야 합니다';
+      return 'ポートは数字でなければなりません';
     }
 
     if (portNum < 1 || portNum > 65535) {
-      return '포트는 1-65535 범위여야 합니다';
+      return 'ポートは1～65535の範囲でなければなりません';
     }
 
     return null;
@@ -208,20 +208,20 @@ class SettingsModel extends ChangeNotifier {
 
   String? _validateDnsServer(String dns) {
     if (dns.isEmpty) {
-      return 'DNS 서버를 입력하세요';
+      return 'DNSサーバーを入力してください';
     }
 
-    // IP 주소 형식 검증
+    // IPアドレス形式検証
     final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
     if (!ipRegex.hasMatch(dns)) {
-      return '올바른 IP 주소 형식이 아닙니다';
+      return '正しいIPアドレス形式ではありません';
     }
 
     final parts = dns.split('.');
     for (String part in parts) {
       final num = int.tryParse(part);
       if (num == null || num < 0 || num > 255) {
-        return '올바른 IP 주소 형식이 아닙니다';
+        return '正しいIPアドレス形式ではありません';
       }
     }
 
@@ -230,11 +230,11 @@ class SettingsModel extends ChangeNotifier {
 
   String? _validateTimeout(int timeout) {
     if (timeout < 5) {
-      return '타임아웃은 최소 5초 이상이어야 합니다';
+      return 'タイムアウトは最低5秒以上でなければなりません';
     }
 
     if (timeout > 300) {
-      return '타임아웃은 최대 300초 이하여야 합니다';
+      return 'タイムアウトは最大300秒以下でなければなりません';
     }
 
     return null;

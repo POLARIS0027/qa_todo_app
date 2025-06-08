@@ -34,16 +34,16 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _handleLogin() async {
-    // Bug#11: 네트워크 실패 시 무한 로딩 (중간 난이도)
-    // 네트워크 연결이 없을 때 로딩이 계속되고 에러 메시지나 재시도 옵션이 없음
+    // Bug#11: ネットワーク失敗時の無限ローディング (中級)
+    // ネットワーク接続がない時にローディングが続き、エラーメッセージや再試行オプションがない
     final userModel = Provider.of<UserModel>(context, listen: false);
     final success =
         await userModel.login(_emailController.text, _passwordController.text);
 
-    // Consumer에서 자동으로 화면 전환이 처리되므로 별도 네비게이션 불필요
+    // Consumerによって自動で画面遷移が処理されるため、別途ナビゲーションは不要
     if (!success && mounted && !userModel.isLoading) {
-      // 상세한 에러 메시지 표시
-      final errorMessage = userModel.errorMessage ?? '로그인에 실패했습니다.';
+      // 詳細なエラーメッセージ表示
+      final errorMessage = userModel.errorMessage ?? 'ログインに失敗しました。';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
@@ -60,12 +60,12 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해주세요.')),
+        const SnackBar(content: Text('会員登録が完了しました。ログインしてください。')),
       );
-      _tabController.animateTo(0); // 로그인 탭으로 이동
+      _tabController.animateTo(0); // ログインタブに移動
     } else if (mounted) {
-      // 상세한 에러 메시지 표시
-      final errorMessage = userModel.errorMessage ?? '회원가입에 실패했습니다.';
+      // 詳細なエラーメッセージ表示
+      final errorMessage = userModel.errorMessage ?? '会員登録に失敗しました。';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMessage)),
       );
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('QA 교육용 Todo 앱'),
+        title: Text('QA教育用Todoアプリ'),
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
@@ -94,9 +94,9 @@ class _LoginScreenState extends State<LoginScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: '로그인'),
-            // Bug#1: UI 오타 "가입하기" → "가입하가" (쉬운 버그)
-            Tab(text: '가입하가'),
+            Tab(text: 'ログイン'),
+            // Bug#1: UIのタイポ「会員登録」->「会院登録」(易)
+            Tab(text: '会院登録'),
           ],
           onTap: (index) {
             setState(() {
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: '이메일',
+                  labelText: 'メールアドレス',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
@@ -135,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: '비밀번호',
+                  labelText: 'パスワード',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: false,
@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen>
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text('로그인'),
+                      : Text('ログイン'),
                 ),
               ),
             ],
@@ -172,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
-                  labelText: '이메일',
+                  labelText: 'メールアドレス',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: '비밀번호',
+                  labelText: 'パスワード',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen>
               TextField(
                 controller: _confirmPasswordController,
                 decoration: InputDecoration(
-                  labelText: '비밀번호 확인',
+                  labelText: 'パスワード確認',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen>
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text('회원가입'),
+                      : Text('会員登録'),
                 ),
               ),
               SizedBox(height: 16),
@@ -217,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen>
                     _isLogin = true;
                   });
                 },
-                child: Text('이미 계정이 있으신가요? 로그인하기'),
+                child: Text('すでにアカウントをお持ちですか？ログイン'),
               ),
             ],
           ),

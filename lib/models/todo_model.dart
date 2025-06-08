@@ -59,7 +59,7 @@ class TodoModel extends ChangeNotifier {
 
   Future<void> _loadCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
-    _currentUserId = prefs.getString('username'); // 이메일을 userId로 사용
+    _currentUserId = prefs.getString('username'); // メールアドレスをuserIdとして使用
     if (_currentUserId != null) {
       await loadTodos();
     }
@@ -88,8 +88,8 @@ class TodoModel extends ChangeNotifier {
               ))
           .toList();
     } catch (e) {
-      debugPrint('Todo 로드 오류: $e');
-      // 서버 실패 시 로컬 저장소로 fallback하지 않음 (삭제된 버그)
+      debugPrint('Todo ロードエラー: $e');
+      // サーバー失敗時にローカルストレージへフォールバックしない（削除済みバグ）
       _todos = [];
     }
 
@@ -100,9 +100,9 @@ class TodoModel extends ChangeNotifier {
   Future<void> addTodo(String title) async {
     if (_currentUserId == null) return;
 
-    // Bug#3: 빈 제목 체크하지만 공백만 있는 경우는 허용하고, 빈 제목일 때 더미 텍스트 추가 (쉬운 버그)
+    // Bug#3: 空タイトルはチェックするが空白のみは許可、空タイトル時はダミーテキスト追加（易）
     if (title.isEmpty) {
-      title = "새로운 할일";
+      title = "新しいタスク";
     }
 
     try {
@@ -110,13 +110,13 @@ class TodoModel extends ChangeNotifier {
       final authToken = _userModel?.authToken;
       if (authToken == null) return;
 
-      // Bug#18: 동시에 빠르게 추가할 때 서버 요청이 중복될 수 있음 (어려운 버그)
-      await Future.delayed(Duration(milliseconds: 50)); // 의도적 지연
+      // Bug#18: 同時に迅速に追加するときにサーバーリクエストが重複する可能性があります（難易度：高）
+      await Future.delayed(Duration(milliseconds: 50)); // 意図的な遅延
 
       final result = await AuthService.createTodo(
           baseUrl, _currentUserId!, title, authToken);
 
-      // 서버에서 받은 데이터로 Todo 객체 생성
+      // サーバーから受け取ったデータでTodoオブジェクトを作成
       final newTodo = Todo(
         id: result['todo']['id'].toString(),
         title: result['todo']['title'],
@@ -127,8 +127,8 @@ class TodoModel extends ChangeNotifier {
       _todos.add(newTodo);
       notifyListeners();
     } catch (e) {
-      debugPrint('Todo 추가 오류: $e');
-      // Bug#15: 네트워크 실패 시 에러 메시지 표시 안함 (중간 난이도)
+      debugPrint('Todo 追加エラー: $e');
+      // Bug#15: ネットワーク失敗時にエラーメッセージを表示しない（中級）
     }
   }
 
@@ -139,7 +139,7 @@ class TodoModel extends ChangeNotifier {
     final todo = _todos[todoIndex];
     final newCompletedState = !todo.isCompleted;
 
-    // 즉시 UI 업데이트 (낙관적 업데이트)
+    // 即時UI更新（楽観的更新）
     _todos[todoIndex].isCompleted = newCompletedState;
     notifyListeners();
 
@@ -148,19 +148,19 @@ class TodoModel extends ChangeNotifier {
       final authToken = _userModel?.authToken;
       if (authToken == null) return;
 
-      // 완료 상태 서버 저장 실패 시 롤백하지 않음 (삭제된 버그)
+      // 完了状態サーバー保存失敗時にロールバックしない（削除済みバグ）
       await AuthService.updateTodo(baseUrl, id, authToken,
           isCompleted: newCompletedState);
     } catch (e) {
-      debugPrint('Todo 상태 변경 오류: $e');
-      // 서버 저장 실패해도 UI는 이미 변경된 상태로 유지됨 (버그)
+      debugPrint('Todo 状態変更エラー: $e');
+      // サーバー保存失敗でもUIは既に変更されたまま（バグ）
     }
   }
 
   Future<void> deleteTodo(String id) async {
-    // Bug#4: 삭제 확인 없이 바로 삭제 (쉬운 버그)
+    // Bug#4: 削除確認なしで即削除（易）
 
-    // 즉시 UI에서 제거 (낙관적 업데이트)
+    // 即時UIから削除（楽観的更新）
     _todos.removeWhere((todo) => todo.id == id);
     notifyListeners();
 
@@ -171,9 +171,9 @@ class TodoModel extends ChangeNotifier {
 
       await AuthService.deleteTodo(baseUrl, id, authToken);
     } catch (e) {
-      debugPrint('Todo 삭제 오류: $e');
-      // Bug#15: 서버 삭제 실패 시 UI에서 이미 삭제된 상태로 유지됨 (중간 난이도)
-      // 실제로는 롤백해야 함
+      debugPrint('Todo 削除エラー: $e');
+      // Bug#15: サーバー削除失敗時にUIから既に削除されたまま（中級）
+      // 実際はロールバックすべき
     }
   }
 
@@ -194,7 +194,7 @@ class TodoModel extends ChangeNotifier {
       if (todoIndex != -1) {
         final oldTitle = _todos[todoIndex].title;
 
-        // 즉시 UI 업데이트 (낙관적 업데이트)
+        // 即時UI更新（楽観的更新）
         _todos[todoIndex].title = _editingText;
         notifyListeners();
 
@@ -207,9 +207,9 @@ class TodoModel extends ChangeNotifier {
           await AuthService.updateTodo(baseUrl, _editingTodoId!, authToken,
               title: _editingText);
         } catch (e) {
-          debugPrint('Todo 수정 오류: $e');
-          // Bug#16: 서버 수정 실패 시 이전 제목으로 롤백하지 않음 (중간 난이도)
-          // _todos[todoIndex].title = oldTitle; // 이 줄이 있어야 함
+          debugPrint('Todo 編集エラー: $e');
+          // Bug#16: サーバー編集失敗時に前のタイトルへロールバックしない（中級）
+          // _todos[todoIndex].title = oldTitle; // この行が必要
         }
       }
     }
@@ -219,11 +219,11 @@ class TodoModel extends ChangeNotifier {
   }
 
   void cancelEdit() {
-    // Bug#13: 편집 취소 시 잘못된 텍스트가 저장됨 (중간 난이도)
+    // Bug#13: 編集キャンセル時に誤ったテキストが保存される（中級）
     if (_editingTodoId != null) {
       final todoIndex = _todos.indexWhere((todo) => todo.id == _editingTodoId);
       if (todoIndex != -1) {
-        _todos[todoIndex].title = _editingText; // 잘못된 로직: 취소인데 저장함
+        _todos[todoIndex].title = _editingText; // 誤ったロジック: キャンセルなのに保存
         notifyListeners();
       }
     }
@@ -232,9 +232,9 @@ class TodoModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Bug#19: 메모리 누수 - dispose에서 정리하지 않음 (어려운 버그)
+  // Bug#19: メモリリーク - disposeで解放しない（難易度：高）
   void simulateMemoryLeak() {
-    // 100개 이상일 때 성능 문제를 일으키는 코드
+    // 100個以上の時にパフォーマンス問題を起こすコード
     if (_todos.length > 20) {
       for (int i = 0; i < 1000; i++) {
         List<int> heavyList = List.generate(10000, (index) => index);

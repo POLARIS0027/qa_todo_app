@@ -23,7 +23,7 @@ class _TodoScreenState extends State<TodoScreen> {
     final todoModel = Provider.of<TodoModel>(context, listen: false);
     final title = _todoController.text;
 
-    // Bug#18: 중복 클릭 방지 없음 - 빠른 연속 클릭 시 중복 생성 (어려운 버그)
+    // Bug#18: 連続クリック防止なし - 高速連打で重複作成（難易度：高）
     await todoModel.addTodo(title);
     _todoController.clear();
   }
@@ -31,18 +31,18 @@ class _TodoScreenState extends State<TodoScreen> {
   void _showEditDialog(BuildContext context, Todo todo) {
     _editController.text = todo.title;
 
-    // Bug#13 구현을 위해 편집 시작 시점에 startEditing 호출
+    // Bug#13: 編集開始時にstartEditingを呼び出す
     final todoModel = Provider.of<TodoModel>(context, listen: false);
     todoModel.startEditing(todo.id, todo.title);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('할일 수정'),
+        title: Text('タスク編集'),
         content: TextField(
           controller: _editController,
           decoration: InputDecoration(
-            labelText: '할일',
+            labelText: 'タスク',
             border: OutlineInputBorder(),
           ),
           onChanged: (value) {
@@ -56,7 +56,7 @@ class _TodoScreenState extends State<TodoScreen> {
               Provider.of<TodoModel>(context, listen: false).cancelEdit();
               Navigator.of(context).pop();
             },
-            child: Text('취소'),
+            child: Text('キャンセル'),
           ),
           TextButton(
             onPressed: () {
@@ -64,7 +64,7 @@ class _TodoScreenState extends State<TodoScreen> {
               todoModel.saveEdit();
               Navigator.of(context).pop();
             },
-            child: Text('저장'),
+            child: Text('保存'),
           ),
         ],
       ),
@@ -75,7 +75,7 @@ class _TodoScreenState extends State<TodoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('할일 목록'),
+        title: Text('タスク一覧'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -86,7 +86,7 @@ class _TodoScreenState extends State<TodoScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'logout',
-                child: Text('로그아웃'),
+                child: Text('ログアウト'),
               ),
             ],
           ),
@@ -94,19 +94,19 @@ class _TodoScreenState extends State<TodoScreen> {
       ),
       body: Column(
         children: [
-          // Bug#7: 화면 회전 시 UI 레이아웃 깨짐 (쉬운 버그)
+          // Bug#7: 画面回転時にUIレイアウトが崩れる（易）
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: MediaQuery.of(context).orientation == Orientation.landscape
-                ? // 가로 모드일 때만 고정 너비로 문제 발생
+                ? // 横向き時のみ固定幅で問題発生
                 Row(
                     children: [
                       Container(
-                        width: 400, // 가로 모드에서 화면을 넘는 너비
+                        width: 400, // 横向きで画面を超える幅
                         child: TextField(
                           controller: _todoController,
                           decoration: InputDecoration(
-                            labelText: '새로운 할일을 입력하세요',
+                            labelText: '新しいタスクを入力してください',
                             border: OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _addTodo(),
@@ -117,7 +117,7 @@ class _TodoScreenState extends State<TodoScreen> {
                         width: 80,
                         child: ElevatedButton(
                           onPressed: _addTodo,
-                          child: Text('추가'),
+                          child: Text('追加'),
                         ),
                       ),
                       SizedBox(width: 8),
@@ -125,19 +125,19 @@ class _TodoScreenState extends State<TodoScreen> {
                         width: 80,
                         child: ElevatedButton(
                           onPressed: () {},
-                          child: Text('설정'),
+                          child: Text('設定'),
                         ),
                       ),
                     ],
                   )
-                : // 세로 모드일 때는 정상적인 반응형 레이아웃
+                : // 縦向き時は正常なレスポンシブレイアウト
                 Row(
                     children: [
                       Expanded(
                         child: TextField(
                           controller: _todoController,
                           decoration: InputDecoration(
-                            labelText: '새로운 할일을 입력하세요',
+                            labelText: '新しいタスクを入力してください',
                             border: OutlineInputBorder(),
                           ),
                           onSubmitted: (_) => _addTodo(),
@@ -146,7 +146,7 @@ class _TodoScreenState extends State<TodoScreen> {
                       SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: _addTodo,
-                        child: Text('추가'),
+                        child: Text('追加'),
                       ),
                     ],
                   ),
@@ -154,7 +154,7 @@ class _TodoScreenState extends State<TodoScreen> {
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
-                // Bug#19: 성능 문제 시뮬레이션 호출 (어려운 버그)
+                // Bug#19: パフォーマンス問題シミュレーション呼び出し（難易度：高）
                 todoModel.simulateMemoryLeak();
 
                 if (todoModel.isLoading) {
@@ -170,7 +170,7 @@ class _TodoScreenState extends State<TodoScreen> {
                             size: 80, color: Colors.grey),
                         SizedBox(height: 16),
                         Text(
-                          '아직 할일이 없습니다.\n위에서 새로운 할일을 추가해보세요!',
+                          'まだタスクがありません。\n上で新しいタスクを追加してみましょう！',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
@@ -194,12 +194,12 @@ class _TodoScreenState extends State<TodoScreen> {
                         ),
                         title: Text(
                           todo.title,
-                          // Bug#14: 17글자 이상 제목 시 UI 오버플로우 (중간 난이도)
-                          // overflow: TextOverflow.ellipsis, 를 의도적으로 제거하여 텍스트가 넘침
+                          // Bug#14: 17文字以上のタイトルでUIオーバーフロー（中級）
+                          // overflow: TextOverflow.ellipsis, を意図的に削除しテキストが溢れる
                           maxLines: 1,
                           softWrap: false,
                           style: TextStyle(
-                            // Bug#5: 완료된 항목이 취소선 대신 굵은 글씨로 표시 (쉬운 버그)
+                            // Bug#5: 完了項目が取り消し線ではなく太字で表示（易）
                             fontWeight: todo.isCompleted
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -208,7 +208,7 @@ class _TodoScreenState extends State<TodoScreen> {
                           ),
                         ),
                         subtitle: Text(
-                          '생성일: ${_formatDate(todo.createdAt)}',
+                          '作成日: ${_formatDate(todo.createdAt)}',
                           style:
                               TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
@@ -222,7 +222,7 @@ class _TodoScreenState extends State<TodoScreen> {
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
-                                // Bug#4: 삭제 확인 다이얼로그 없이 바로 삭제 (쉬운 버그)
+                                // Bug#4: 削除確認ダイアログなしで即削除（易）
                                 todoModel.deleteTodo(todo.id);
                               },
                             ),
@@ -237,10 +237,10 @@ class _TodoScreenState extends State<TodoScreen> {
           ),
         ],
       ),
-      // Bug#6: FloatingActionButton과 하단 추가 버튼이 중복으로 존재 (쉬운 버그)
+      // Bug#6: FloatingActionButtonと下部追加ボタンが重複して存在（易）
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // 같은 기능을 하는 버튼이 두 개 (위의 추가 버튼과 동일)
+          // 同じ機能のボタンが2つ（上の追加ボタンと同じ）
           _addTodo();
         },
         child: Icon(Icons.add),

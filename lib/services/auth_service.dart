@@ -7,11 +7,11 @@ class AuthService {
 
   AuthService({required this.baseUrl});
 
-  // Static 메서드들 추가 (UserModel에서 사용)
+  // Staticメソッド追加（UserModelで使用）
   static Future<Map<String, dynamic>> login(
       String baseUrl, String email, String password) async {
     try {
-      // Bug#18: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
+      // Bug#18: パスワードを平文で送信（難易度：高・セキュリティ）
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {
@@ -19,7 +19,7 @@ class AuthService {
         },
         body: jsonEncode({
           'email': email,
-          'password': password, // 실제로는 해시되어야 함
+          'password': password, // 本来はハッシュ化すべき
         }),
       );
 
@@ -27,21 +27,21 @@ class AuthService {
         final responseData = jsonDecode(response.body);
         return {
           'success': true,
-          'message': '로그인 성공',
+          'message': 'ログイン成功',
           'token': responseData['token']
         };
       } else {
-        // Bug#19: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
+        // Bug#19: サーバーエラーメッセージをそのまま表示（難易度：高・セキュリティ）
         try {
           final errorData = jsonDecode(response.body);
-          return {'success': false, 'message': errorData['error'] ?? '로그인 실패'};
+          return {'success': false, 'message': errorData['error'] ?? 'ログイン失敗'};
         } catch (e) {
-          return {'success': false, 'message': '서버 응답 파싱 실패: ${response.body}'};
+          return {'success': false, 'message': 'サーバー応答パース失敗: ${response.body}'};
         }
       }
     } catch (e) {
-      // 이 부분에서 Bug#10이 발생: exception을 던지면 UserModel에서 catch하여 무한 로딩
-      throw Exception('네트워크 오류: ${e.toString()}');
+      // この部分でBug#10発生: exceptionを投げるとUserModelでcatchされ無限ローディング
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
@@ -60,23 +60,23 @@ class AuthService {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return {'success': true, 'message': '회원가입 성공'};
+        return {'success': true, 'message': '会員登録成功'};
       } else {
-        debugPrint('회원가입 실패 - 상태코드: ${response.statusCode}');
-        debugPrint('회원가입 실패 - 응답: ${response.body}');
-        return {'success': false, 'message': '회원가입 실패: ${response.statusCode}'};
+        debugPrint('会員登録失敗 - ステータスコード: ${response.statusCode}');
+        debugPrint('会員登録失敗 - 応答: ${response.body}');
+        return {'success': false, 'message': '会員登録失敗: ${response.statusCode}'};
       }
     } catch (e) {
-      debugPrint('회원가입 네트워크 오류: $e');
-      throw Exception('네트워크 오류: ${e.toString()}');
+      debugPrint('会員登録ネットワークエラー: $e');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
-  // Instance 메서드들 (기존)
+  // Instanceメソッド（従来）
   Future<Map<String, dynamic>> loginInstance(
       String email, String password) async {
     try {
-      // Bug#18: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
+      // Bug#18: パスワードを平文で送信（難易度：高・セキュリティ）
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {
@@ -84,19 +84,19 @@ class AuthService {
         },
         body: jsonEncode({
           'email': email,
-          'password': password, // 실제로는 해시되어야 함
+          'password': password, // 本来はハッシュ化すべき
         }),
       );
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        // Bug#19: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
+        // Bug#19: サーバーエラーメッセージをそのまま表示（難易度：高・セキュリティ）
         final errorBody = jsonDecode(response.body);
-        throw Exception('로그인 실패: ${errorBody['message']}');
+        throw Exception('ログイン失敗: ${errorBody['message']}');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
@@ -117,17 +117,17 @@ class AuthService {
         return jsonDecode(response.body);
       } else {
         final errorBody = jsonDecode(response.body);
-        throw Exception('회원가입 실패: ${errorBody['message']}');
+        throw Exception('会員登録失敗: ${errorBody['message']}');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
   static Future<List<Map<String, dynamic>>> getTodos(
       String baseUrl, String userId, String authToken) async {
     try {
-      // 현재는 토큰 기반 인증 사용 (이전 URL 파라미터 방식에서 개선됨)
+      // 現在はトークンベース認証を使用（以前のURLパラメータ方式から改善）
       final response = await http.get(
         Uri.parse('$baseUrl/todos?userId=$userId'),
         headers: {
@@ -140,10 +140,10 @@ class AuthService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.cast<Map<String, dynamic>>();
       } else {
-        throw Exception('Todo 목록 가져오기 실패');
+        throw Exception('Todoリスト取得失敗');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
@@ -165,10 +165,10 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Todo 생성 실패');
+        throw Exception('Todo作成失敗');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
@@ -192,10 +192,10 @@ class AuthService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        throw Exception('Todo 수정 실패');
+        throw Exception('Todo編集失敗');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 
@@ -211,10 +211,10 @@ class AuthService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Todo 삭제 실패');
+        throw Exception('Todo削除失敗');
       }
     } catch (e) {
-      throw Exception('네트워크 오류: ${e.toString()}');
+      throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
 }
