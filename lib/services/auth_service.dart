@@ -11,7 +11,7 @@ class AuthService {
   static Future<Map<String, dynamic>> login(
       String baseUrl, String email, String password) async {
     try {
-      // Bug#21: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
+      // Bug#18: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {
@@ -31,7 +31,7 @@ class AuthService {
           'token': responseData['token']
         };
       } else {
-        // Bug#22: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
+        // Bug#19: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
         try {
           final errorData = jsonDecode(response.body);
           return {'success': false, 'message': errorData['error'] ?? '로그인 실패'};
@@ -40,7 +40,7 @@ class AuthService {
         }
       }
     } catch (e) {
-      // 이 부분에서 Bug#11이 발생: exception을 던지면 UserModel에서 catch하여 무한 로딩
+      // 이 부분에서 Bug#10이 발생: exception을 던지면 UserModel에서 catch하여 무한 로딩
       throw Exception('네트워크 오류: ${e.toString()}');
     }
   }
@@ -76,7 +76,7 @@ class AuthService {
   Future<Map<String, dynamic>> loginInstance(
       String email, String password) async {
     try {
-      // Bug#21: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
+      // Bug#18: 비밀번호를 평문으로 전송 (어려운 버그 - 보안)
       final response = await http.post(
         Uri.parse('$baseUrl/login'),
         headers: {
@@ -91,7 +91,7 @@ class AuthService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        // Bug#22: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
+        // Bug#19: 서버 에러 메시지를 그대로 노출 (어려운 버그 - 보안)
         final errorBody = jsonDecode(response.body);
         throw Exception('로그인 실패: ${errorBody['message']}');
       }

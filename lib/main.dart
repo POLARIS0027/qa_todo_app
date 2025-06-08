@@ -40,9 +40,6 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<UserModel>(
           builder: (context, userModel, child) {
-            // Bug#18: 로그아웃 후 뒤로 가기로 접근 가능 (중간 난이도)
-            // 정상적이라면 로그아웃 시 네비게이션 스택을 완전히 초기화해야 함
-            // 현재는 단순히 화면만 바뀌어서 뒤로 가기로 이전 화면 접근 가능
             return userModel.isLoggedIn ? TodoScreen() : LoginScreen();
           },
         ),

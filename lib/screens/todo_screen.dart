@@ -23,7 +23,7 @@ class _TodoScreenState extends State<TodoScreen> {
     final todoModel = Provider.of<TodoModel>(context, listen: false);
     final title = _todoController.text;
 
-    // Bug#19: 중복 클릭 방지 없음 - 빠른 연속 클릭 시 중복 생성 (어려운 버그)
+    // Bug#18: 중복 클릭 방지 없음 - 빠른 연속 클릭 시 중복 생성 (어려운 버그)
     await todoModel.addTodo(title);
     _todoController.clear();
   }
@@ -94,32 +94,67 @@ class _TodoScreenState extends State<TodoScreen> {
       ),
       body: Column(
         children: [
+          // Bug#7: 화면 회전 시 UI 레이아웃 깨짐 (쉬운 버그)
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _todoController,
-                    decoration: InputDecoration(
-                      labelText: '새로운 할일을 입력하세요',
-                      border: OutlineInputBorder(),
-                    ),
-                    onSubmitted: (_) => _addTodo(),
+            child: MediaQuery.of(context).orientation == Orientation.landscape
+                ? // 가로 모드일 때만 고정 너비로 문제 발생
+                Row(
+                    children: [
+                      Container(
+                        width: 400, // 가로 모드에서 화면을 넘는 너비
+                        child: TextField(
+                          controller: _todoController,
+                          decoration: InputDecoration(
+                            labelText: '새로운 할일을 입력하세요',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _addTodo(),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
+                        width: 80,
+                        child: ElevatedButton(
+                          onPressed: _addTodo,
+                          child: Text('추가'),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
+                        width: 80,
+                        child: ElevatedButton(
+                          onPressed: () {},
+                          child: Text('설정'),
+                        ),
+                      ),
+                    ],
+                  )
+                : // 세로 모드일 때는 정상적인 반응형 레이아웃
+                Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _todoController,
+                          decoration: InputDecoration(
+                            labelText: '새로운 할일을 입력하세요',
+                            border: OutlineInputBorder(),
+                          ),
+                          onSubmitted: (_) => _addTodo(),
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _addTodo,
+                        child: Text('추가'),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _addTodo,
-                  child: Text('추가'),
-                ),
-              ],
-            ),
           ),
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
-                // Bug#20: 성능 문제 시뮬레이션 호출 (어려운 버그)
+                // Bug#19: 성능 문제 시뮬레이션 호출 (어려운 버그)
                 todoModel.simulateMemoryLeak();
 
                 if (todoModel.isLoading) {

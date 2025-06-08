@@ -17,7 +17,7 @@ class UserModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Bug#10: 토큰 만료 체크 없음
+  // Bug#8: 토큰 만료 체크 없음
   // 앱 재시작 시 토큰 만료 여부를 확인하지 않고 자동 로그인 처리
   UserModel({SettingsModel? settingsModel}) : _settingsModel = settingsModel {
     _checkLoginStatus();
@@ -53,18 +53,18 @@ class UserModel extends ChangeNotifier {
     }
   }
 
-  // Bug#8: 중복 이메일 허용
-  // Bug#9: 비밀번호 확인 검증 없음
+  // Bug#9: 중복 이메일 허용
+  // Bug#10: 비밀번호 확인 검증 없음
   Future<bool> signup(
       String email, String password, String confirmPassword) async {
     _setLoading(true);
     _clearError();
 
-    // Bug#9: 비밀번호 확인이 일치하는지 검증하지 않음
+    // Bug#10: 비밀번호 확인이 일치하는지 검증하지 않음
     // if (password != confirmPassword) return false;
 
     try {
-      // Bug#8: 이미 존재하는 이메일인지 확인하지 않음
+      // Bug#9: 이미 존재하는 이메일인지 확인하지 않음
       final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
       debugPrint('Signup baseUrl: $baseUrl');
       debugPrint('SettingsModel is null: ${_settingsModel == null}');

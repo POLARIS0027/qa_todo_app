@@ -89,7 +89,7 @@ class TodoModel extends ChangeNotifier {
           .toList();
     } catch (e) {
       debugPrint('Todo 로드 오류: $e');
-      // Bug#12: 서버 실패 시 로컬 저장소로 fallback하지 않음
+      // 서버 실패 시 로컬 저장소로 fallback하지 않음 (삭제된 버그)
       _todos = [];
     }
 
@@ -110,7 +110,7 @@ class TodoModel extends ChangeNotifier {
       final authToken = _userModel?.authToken;
       if (authToken == null) return;
 
-      // Bug#19: 동시에 빠르게 추가할 때 서버 요청이 중복될 수 있음 (어려운 버그)
+      // Bug#18: 동시에 빠르게 추가할 때 서버 요청이 중복될 수 있음 (어려운 버그)
       await Future.delayed(Duration(milliseconds: 50)); // 의도적 지연
 
       final result = await AuthService.createTodo(
@@ -148,7 +148,7 @@ class TodoModel extends ChangeNotifier {
       final authToken = _userModel?.authToken;
       if (authToken == null) return;
 
-      // Bug#12: 완료 상태 서버 저장 실패 시 롤백하지 않음 (중간 난이도)
+      // 완료 상태 서버 저장 실패 시 롤백하지 않음 (삭제된 버그)
       await AuthService.updateTodo(baseUrl, id, authToken,
           isCompleted: newCompletedState);
     } catch (e) {
@@ -172,7 +172,7 @@ class TodoModel extends ChangeNotifier {
       await AuthService.deleteTodo(baseUrl, id, authToken);
     } catch (e) {
       debugPrint('Todo 삭제 오류: $e');
-      // Bug#16: 서버 삭제 실패 시 UI에서 이미 삭제된 상태로 유지됨 (중간 난이도)
+      // Bug#15: 서버 삭제 실패 시 UI에서 이미 삭제된 상태로 유지됨 (중간 난이도)
       // 실제로는 롤백해야 함
     }
   }
@@ -208,7 +208,7 @@ class TodoModel extends ChangeNotifier {
               title: _editingText);
         } catch (e) {
           debugPrint('Todo 수정 오류: $e');
-          // Bug#17: 서버 수정 실패 시 이전 제목으로 롤백하지 않음 (중간 난이도)
+          // Bug#16: 서버 수정 실패 시 이전 제목으로 롤백하지 않음 (중간 난이도)
           // _todos[todoIndex].title = oldTitle; // 이 줄이 있어야 함
         }
       }
@@ -232,7 +232,7 @@ class TodoModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Bug#20: 메모리 누수 - dispose에서 정리하지 않음 (어려운 버그)
+  // Bug#19: 메모리 누수 - dispose에서 정리하지 않음 (어려운 버그)
   void simulateMemoryLeak() {
     // 100개 이상일 때 성능 문제를 일으키는 코드
     if (_todos.length > 20) {
