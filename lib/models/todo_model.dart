@@ -141,7 +141,7 @@ class TodoModel extends ChangeNotifier {
       }
 
       // Bug#18: 同時に迅速に追加するときにサーバーリクエストが重複する可能性があります（難易度：高）
-      await Future.delayed(Duration(milliseconds: 50)); // 意図的な遅延
+      await Future.delayed(Duration(milliseconds: 100)); // 意図的な遅延
 
       final result = await AuthService.createTodo(
           baseUrl, _currentUserId!, title, authToken);
@@ -186,7 +186,7 @@ class TodoModel extends ChangeNotifier {
       final authToken = _authToken;
       if (authToken == null) return;
 
-      // 완료状態サーバー保存失敗時にロールバックしない（削除済みバグ）
+      // 完了状態サーバー保存失敗時にロールバックしない（削除済みバグ）
       await AuthService.updateTodo(baseUrl, id, authToken,
           isCompleted: newCompletedState);
     } catch (e) {
@@ -271,7 +271,7 @@ class TodoModel extends ChangeNotifier {
 
   // Bug#19: メモリリーク - disposeで解放しない（難易度：高）
   void simulateMemoryLeak() {
-    // 100個以上の時にパフォーマンス問題を起こすコード
+    // 20個以上の時にパフォーマンス問題を起こすコード
     if (_todos.length > 20) {
       for (int i = 0; i < 1000; i++) {
         List<int> heavyList = List.generate(10000, (index) => index);
