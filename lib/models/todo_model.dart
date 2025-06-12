@@ -87,6 +87,9 @@ class TodoModel extends ChangeNotifier {
                 createdAt: DateTime.parse(data['created_at']),
               ))
           .toList();
+
+      // 로드 후 정렬
+      _sortTodos();
     } catch (e) {
       debugPrint('Todo ロードエラー: $e');
       // サーバー失敗時にローカルストレージへフォールバックしない（削除済みバグ）
@@ -95,6 +98,19 @@ class TodoModel extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // Todo 정렬 함수
+  void _sortTodos() {
+    _todos.sort((a, b) {
+      // 1. 완료 상태로 우선 정렬 (미완료가 위에)
+      if (a.isCompleted != b.isCompleted) {
+        return a.isCompleted ? 1 : -1;
+      }
+
+      // 2. 같은 상태 내에서는 최신순 정렬 (최신이 위에)
+      return b.createdAt.compareTo(a.createdAt);
+    });
   }
 
   Future<void> addTodo(String title) async {
@@ -125,6 +141,10 @@ class TodoModel extends ChangeNotifier {
       );
 
       _todos.add(newTodo);
+
+      // 추가 후 정렬하여 새로운 Todo가 맨 위로 가게 함
+      _sortTodos();
+
       notifyListeners();
     } catch (e) {
       debugPrint('Todo 追加エラー: $e');
@@ -139,8 +159,12 @@ class TodoModel extends ChangeNotifier {
     final todo = _todos[todoIndex];
     final newCompletedState = !todo.isCompleted;
 
-    // 即時UI更新（楽観的更新）
+    // 즉시 UI 업데이트 (낙관적 업데이트)
     _todos[todoIndex].isCompleted = newCompletedState;
+
+    // 완료 상태 변경 후 정렬
+    _sortTodos();
+
     notifyListeners();
 
     try {
@@ -148,7 +172,7 @@ class TodoModel extends ChangeNotifier {
       final authToken = _userModel?.authToken;
       if (authToken == null) return;
 
-      // 完了状態サーバー保存失敗時にロールバックしない（削除済みバグ）
+      // 완료状態サーバー保存失敗時にロールバックしない（削除済みバグ）
       await AuthService.updateTodo(baseUrl, id, authToken,
           isCompleted: newCompletedState);
     } catch (e) {

@@ -50,6 +50,21 @@ class SettingsModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 실시간 업데이트용 (저장하지 않음)
+  void setServerAddressTemporary(String address) {
+    _serverAddress = address;
+    notifyListeners();
+  }
+
+  // 서버 주소 저장 (검증 포함)
+  Future<void> saveServerAddress() async {
+    final validation = _validateServerAddress(_serverAddress);
+    if (validation != null) {
+      throw Exception(validation);
+    }
+    await _saveSettings();
+  }
+
   Future<void> updateServerPort(String port) async {
     final validation = _validatePort(port);
     if (validation != null) {
@@ -59,6 +74,21 @@ class SettingsModel extends ChangeNotifier {
     _serverPort = port;
     await _saveSettings();
     notifyListeners();
+  }
+
+  // 포트 실시간 업데이트용
+  void setServerPortTemporary(String port) {
+    _serverPort = port;
+    notifyListeners();
+  }
+
+  // 포트 저장 (검증 포함)
+  Future<void> saveServerPort() async {
+    final validation = _validatePort(_serverPort);
+    if (validation != null) {
+      throw Exception(validation);
+    }
+    await _saveSettings();
   }
 
   Future<void> updateDnsServer(String dns) async {
@@ -161,13 +191,13 @@ class SettingsModel extends ChangeNotifier {
       return 'サーバーアドレスを入力してください';
     }
 
-    // localhost 許可
+    // localhost 허용
     if (address.toLowerCase() == 'localhost') {
       return null;
     }
 
-    // IPアドレス形式検証（簡易版）
-    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}[0m$');
+    // IP 주소 형식 검증 (올바른 정규식)
+    final ipRegex = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
     if (ipRegex.hasMatch(address)) {
       final parts = address.split('.');
       for (String part in parts) {
@@ -179,7 +209,7 @@ class SettingsModel extends ChangeNotifier {
       return null;
     }
 
-    // ドメイン名形式検証（簡易版）
+    // 도메인명 형식 검증
     final domainRegex = RegExp(
         r'^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$');
     if (!domainRegex.hasMatch(address)) {

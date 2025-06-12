@@ -114,7 +114,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: Consumer<SettingsModel>(
         builder: (context, settings, child) {
-          return Padding(
+          print('DEBUG: Consumer rebuild, baseUrl: ${settings.baseUrl}');
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,12 +137,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     errorText: _validationErrors['server_address'],
                   ),
                   onChanged: (value) {
+                    print('DEBUG: Server address changed to: $value');
+                    // 실시간으로 모델만 업데이트 (저장은 하지 않음)
+                    settings.setServerAddressTemporary(value);
+                    setState(() {
+                      _validationErrors.remove('server_address');
+                    });
+                  },
+                  onEditingComplete: () async {
+                    // 편집 완료 시에만 검증하고 저장
                     try {
-                      settings.updateServerAddress(value);
-                      setState(() {
-                        _validationErrors.remove('server_address');
-                      });
+                      await settings.saveServerAddress();
+                      print('DEBUG: Server address saved permanently');
                     } catch (e) {
+                      print('DEBUG: Error saving server address: $e');
                       setState(() {
                         _validationErrors['server_address'] =
                             e.toString().replaceFirst('Exception: ', '');
@@ -163,11 +172,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
+                    // 실시간으로 모델만 업데이트
+                    settings.setServerPortTemporary(value);
+                    setState(() {
+                      _validationErrors.remove('server_port');
+                    });
+                  },
+                  onEditingComplete: () async {
+                    // 편집 완료 시 검증하고 저장
                     try {
-                      settings.updateServerPort(value);
-                      setState(() {
-                        _validationErrors.remove('server_port');
-                      });
+                      await settings.saveServerPort();
                     } catch (e) {
                       setState(() {
                         _validationErrors['server_port'] =
@@ -298,10 +312,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed:
-                        (_isTestingConnection || _validationErrors.isNotEmpty)
-                            ? null
-                            : _testConnection,
+                    onPressed: _isTestingConnection ? null : _testConnection,
                     child: _isTestingConnection
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -320,17 +331,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
-                Spacer(),
-
-                Center(
-                  child: Text(
-                    '設定は自動的に保存されます',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                // 키보드가 올라와도 충분한 여백 확보
+                SizedBox(height: MediaQuery.of(context).viewInsets.bottom + 50),
               ],
             ),
           );
