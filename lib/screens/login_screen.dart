@@ -18,10 +18,19 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   late TabController _tabController;
 
+  // SnackBar 중복 표시 방지를 위한 플래그들
+  bool _emailSnackBarShown = false;
+  bool _passwordSnackBarShown = false;
+  bool _confirmPasswordSnackBarShown = false;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // 실시간 UI 업데이트를 위한 리스너 추가
+    _emailController.addListener(() => setState(() {}));
+    _passwordController.addListener(() => setState(() {}));
+    _confirmPasswordController.addListener(() => setState(() {}));
   }
 
   @override
@@ -33,12 +42,97 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  Color _getEmailBorderColor() {
+    final length = _emailController.text.length;
+    if (length >= 50) return Colors.red;
+    return Colors.grey;
+  }
+
+  Color _getPasswordBorderColor() {
+    final length = _passwordController.text.length;
+    if (length >= 20) return Colors.red;
+    return Colors.grey;
+  }
+
+  Color _getConfirmPasswordBorderColor() {
+    final length = _confirmPasswordController.text.length;
+    if (length >= 20) return Colors.red;
+    return Colors.grey;
+  }
+
+  // SnackBar 표시 함수들
+  void _showEmailLimitSnackBar() {
+    if (!_emailSnackBarShown) {
+      _emailSnackBarShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('メールアドレスは50文字までです'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // 2초 후 다시 표시 가능하도록 설정
+      Future.delayed(Duration(seconds: 2), () {
+        _emailSnackBarShown = false;
+      });
+    }
+  }
+
+  void _showPasswordLimitSnackBar() {
+    if (!_passwordSnackBarShown) {
+      _passwordSnackBarShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('パスワードは20文字までです'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Future.delayed(Duration(seconds: 2), () {
+        _passwordSnackBarShown = false;
+      });
+    }
+  }
+
+  void _showConfirmPasswordLimitSnackBar() {
+    if (!_confirmPasswordSnackBarShown) {
+      _confirmPasswordSnackBarShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('パスワード確認は20文字までです'),
+          // バグ#12: パスワード確認のエラーメッセージが赤色になっている(易)
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Future.delayed(Duration(seconds: 2), () {
+        _confirmPasswordSnackBarShown = false;
+      });
+    }
+  }
+
   void _handleLogin() async {
     // Bug#11: ネットワーク失敗時の無限ローディング (中級)
     // ネットワーク接続がない時にローディングが続き、エラーメッセージや再試行オプションがない
     final userModel = Provider.of<UserModel>(context, listen: false);
     final success =
         await userModel.login(_emailController.text, _passwordController.text);
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (email.length > 50) {
+      _showEmailLimitSnackBar();
+      return;
+    }
+
+    if (password.length > 20) {
+      _showPasswordLimitSnackBar();
+      return;
+    }
+
+    if (confirmPassword.length > 20) {
+      _showConfirmPasswordLimitSnackBar();
+      return;
+    }
 
     // Consumerによって自動で画面遷移が処理されるため、別途ナビゲーションは不要
     if (!success && mounted && !userModel.isLoading) {
@@ -125,18 +219,46 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               TextField(
                 controller: _emailController,
+                maxLength: 50,
+                onChanged: (value) {
+                  if (value.length >= 50) {
+                    _showEmailLimitSnackBar();
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: 'メールアドレス',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: _getEmailBorderColor()),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: _getEmailBorderColor(), width: 2),
+                  ),
+                  counterText: '',
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
+                maxLength: 20,
+                onChanged: (value) {
+                  if (value.length >= 20) {
+                    _showPasswordLimitSnackBar();
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: 'パスワード',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: _getPasswordBorderColor()),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: _getPasswordBorderColor(), width: 2),
+                  ),
+                  counterText: '',
                 ),
                 obscureText: false,
               ),
@@ -171,27 +293,70 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               TextField(
                 controller: _emailController,
+                maxLength: 50,
+                onChanged: (value) {
+                  if (value.length >= 50) {
+                    _showEmailLimitSnackBar();
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: 'メールアドレス',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: _getEmailBorderColor()),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: _getEmailBorderColor(), width: 2),
+                  ),
+                  counterText: '',
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
+                maxLength: 20,
+                onChanged: (value) {
+                  if (value.length >= 20) {
+                    _showPasswordLimitSnackBar();
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: 'パスワード',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: _getPasswordBorderColor()),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: _getPasswordBorderColor(), width: 2),
+                  ),
+                  counterText: '',
                 ),
                 obscureText: true,
               ),
               SizedBox(height: 16),
               TextField(
                 controller: _confirmPasswordController,
+                maxLength: 20,
+                onChanged: (value) {
+                  if (value.length >= 20) {
+                    _showConfirmPasswordLimitSnackBar();
+                  }
+                },
                 decoration: InputDecoration(
                   labelText: 'パスワード確認',
                   border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: _getConfirmPasswordBorderColor()),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(
+                        color: _getConfirmPasswordBorderColor(), width: 2),
+                  ),
+                  counterText: '',
                 ),
                 obscureText: true,
               ),

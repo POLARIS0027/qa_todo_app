@@ -12,11 +12,68 @@ class _TodoScreenState extends State<TodoScreen> {
   final _todoController = TextEditingController();
   final _editController = TextEditingController();
 
+  // SnackBar 중복 표시 방지를 위한 플래그들
+  bool _todoSnackBarShown = false;
+  bool _editSnackBarShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 실시간 UI 업데이트를 위한 리스너 추가
+    _todoController.addListener(() => setState(() {}));
+    _editController.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
     _todoController.dispose();
     _editController.dispose();
     super.dispose();
+  }
+
+  // Todo 입력창 색상 결정 함수 (100글자 기준)
+  Color _getTodoBorderColor() {
+    final length = _todoController.text.length;
+    if (length >= 100) return Colors.red;
+    return Colors.grey;
+  }
+
+  // Todo 편집창 색상 결정 함수 (100글자 기준)
+  Color _getEditBorderColor() {
+    final length = _editController.text.length;
+    if (length >= 100) return Colors.red;
+    return Colors.grey;
+  }
+
+  // SnackBar 표시 함수들
+  void _showTodoLimitSnackBar() {
+    if (!_todoSnackBarShown) {
+      _todoSnackBarShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('タスク入力はは100文字までです'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Future.delayed(Duration(seconds: 2), () {
+        _todoSnackBarShown = false;
+      });
+    }
+  }
+
+  void _showEditLimitSnackBar() {
+    if (!_editSnackBarShown) {
+      _editSnackBarShown = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('タスク編集入力は100文字までです'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      Future.delayed(Duration(seconds: 2), () {
+        _editSnackBarShown = false;
+      });
+    }
   }
 
   Future<void> _addTodo() async {
@@ -41,11 +98,22 @@ class _TodoScreenState extends State<TodoScreen> {
         title: Text('タスク編集'),
         content: TextField(
           controller: _editController,
+          maxLength: 100,
           decoration: InputDecoration(
             labelText: 'タスク',
             border: OutlineInputBorder(),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _getEditBorderColor()),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: _getEditBorderColor(), width: 2),
+            ),
+            counterText: '', // 카운터 숨기기
           ),
           onChanged: (value) {
+            if (value.length >= 100) {
+              _showEditLimitSnackBar();
+            }
             Provider.of<TodoModel>(context, listen: false)
                 .updateEditingText(value);
           },
@@ -105,9 +173,24 @@ class _TodoScreenState extends State<TodoScreen> {
                         width: 400, // 横向きで画面を超える幅
                         child: TextField(
                           controller: _todoController,
+                          maxLength: 100,
+                          onChanged: (value) {
+                            if (value.length >= 100) {
+                              _showTodoLimitSnackBar();
+                            }
+                          },
                           decoration: InputDecoration(
                             labelText: '新しいタスクを入力してください',
                             border: OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide:
+                                  BorderSide(color: _getTodoBorderColor()),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: _getTodoBorderColor(), width: 2),
+                            ),
+                            counterText: '', // 카운터 숨기기
                           ),
                           onSubmitted: (_) => _addTodo(),
                         ),
@@ -136,9 +219,24 @@ class _TodoScreenState extends State<TodoScreen> {
                       Expanded(
                         child: TextField(
                           controller: _todoController,
+                          maxLength: 100,
+                          onChanged: (value) {
+                            if (value.length >= 100) {
+                              _showTodoLimitSnackBar();
+                            }
+                          },
                           decoration: InputDecoration(
                             labelText: '新しいタスクを入力してください',
                             border: OutlineInputBorder(),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide:
+                                  BorderSide(color: _getTodoBorderColor()),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(
+                                  color: _getTodoBorderColor(), width: 2),
+                            ),
+                            counterText: '', // 카운터 숨기기
                           ),
                           onSubmitted: (_) => _addTodo(),
                         ),
