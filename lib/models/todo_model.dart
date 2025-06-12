@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import '../models/settings_model.dart';
+import '../services/app_services.dart';
 import '../models/user_model.dart';
 import 'dart:convert';
 
@@ -42,8 +42,6 @@ class TodoModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _editingTodoId;
   String _editingText = '';
-  final SettingsModel? _settingsModel;
-  final UserModel? _userModel;
   String? _currentUserId;
 
   List<Todo> get todos => _todos;
@@ -51,18 +49,29 @@ class TodoModel extends ChangeNotifier {
   String? get editingTodoId => _editingTodoId;
   String get editingText => _editingText;
 
-  TodoModel({SettingsModel? settingsModel, UserModel? userModel})
-      : _settingsModel = settingsModel,
-        _userModel = userModel {
+  // GetIt 사용으로 생성자 단순화
+  TodoModel() {
     _loadCurrentUser();
   }
 
+  // GetIt을 통해 필요한 서비스들에 접근
+  String get _baseUrl => getIt<ApiService>().baseUrl;
+  UserModel get _userModel => getIt<UserModel>();
+  String? get _authToken => _userModel.authToken;
+
   Future<void> _loadCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
-    _currentUserId = prefs.getString('username'); // メールアドレスをuserIdとして使用
+    _currentUserId = prefs.getString('username'); // メールアドレス를 userIdとして使用
+    print('DEBUG _loadCurrentUser: _currentUserId = $_currentUserId');
     if (_currentUserId != null) {
       await loadTodos();
     }
+  }
+
+  // 로그인 후 사용자 정보 새로고침
+  Future<void> refreshUser() async {
+    print('DEBUG refreshUser: called');
+    await _loadCurrentUser();
   }
 
   Future<void> loadTodos() async {
@@ -72,8 +81,8 @@ class TodoModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      final authToken = _userModel?.authToken;
+      final baseUrl = _baseUrl;
+      final authToken = _authToken;
       if (authToken == null) return;
 
       final todosData =
@@ -114,7 +123,9 @@ class TodoModel extends ChangeNotifier {
   }
 
   Future<void> addTodo(String title) async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null) {
+      return;
+    }
 
     // Bug#3: 空タイトルはチェックするが空白のみは許可、空タイトル時はダミーテキスト追加（易）
     if (title.isEmpty) {
@@ -122,9 +133,12 @@ class TodoModel extends ChangeNotifier {
     }
 
     try {
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      final authToken = _userModel?.authToken;
-      if (authToken == null) return;
+      final baseUrl = _baseUrl;
+      final authToken = _authToken;
+
+      if (authToken == null) {
+        return;
+      }
 
       // Bug#18: 同時に迅速に追加するときにサーバーリクエストが重複する可能性があります（難易度：高）
       await Future.delayed(Duration(milliseconds: 50)); // 意図的な遅延
@@ -168,8 +182,8 @@ class TodoModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      final authToken = _userModel?.authToken;
+      final baseUrl = _baseUrl;
+      final authToken = _authToken;
       if (authToken == null) return;
 
       // 완료状態サーバー保存失敗時にロールバックしない（削除済みバグ）
@@ -189,8 +203,8 @@ class TodoModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      final authToken = _userModel?.authToken;
+      final baseUrl = _baseUrl;
+      final authToken = _authToken;
       if (authToken == null) return;
 
       await AuthService.deleteTodo(baseUrl, id, authToken);
@@ -223,9 +237,8 @@ class TodoModel extends ChangeNotifier {
         notifyListeners();
 
         try {
-          final baseUrl =
-              _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-          final authToken = _userModel?.authToken;
+          final baseUrl = _baseUrl;
+          final authToken = _authToken;
           if (authToken == null) return;
 
           await AuthService.updateTodo(baseUrl, _editingTodoId!, authToken,

@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
-import '../models/settings_model.dart';
+import '../services/app_services.dart';
+import '../models/todo_model.dart';
 
 class UserModel extends ChangeNotifier {
   String? _username;
@@ -9,7 +10,6 @@ class UserModel extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isLoading = false;
   String? _errorMessage;
-  final SettingsModel? _settingsModel;
 
   String? get username => _username;
   String? get authToken => _authToken;
@@ -17,26 +17,36 @@ class UserModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Bug#8: トークン まれそう チェック ない
-  // アプリ 再起動 時 トークン まれそう どうか 確認せず 自動 ログイン 処理
-  UserModel({SettingsModel? settingsModel}) : _settingsModel = settingsModel {
+  // GetIt 사용으로 생성자 단순화
+  UserModel() {
     _checkLoginStatus();
   }
 
-  // Bug#11: ネットワーク 失敗 時 無限 ローディング
-  // ネットワーク 接続 失敗 時 エラー 処理 なし ローディング 状態 継続 保持
+  // GetIt을 통해 ApiService 접근
+  String get _baseUrl => getIt<ApiService>().baseUrl;
+
+  // Bug#8: トークン まれそう チェック ない
+  // アプリ 再起動 時 トークン まれそう どうか 確認せず 自動 ログイン 処理
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      final result = await AuthService.login(baseUrl, email, password);
+      final result = await AuthService.login(_baseUrl, email, password);
       if (result['success']) {
         _username = email;
         _authToken = result['token']; // トークン 保存
         _isLoggedIn = true;
         await _saveLoginInfo(email, _authToken);
+
+        // 로그인 성공 시 TodoModel 새로고침
+        print('DEBUG login: success, refreshing TodoModel');
+        try {
+          await getIt<TodoModel>().refreshUser();
+        } catch (e) {
+          print('DEBUG login: TodoModel refresh error: $e');
+        }
+
         _setLoading(false);
         return true;
       } else {
@@ -65,11 +75,9 @@ class UserModel extends ChangeNotifier {
 
     try {
       // Bug#9: 既存メールかどうか確認しない
-      final baseUrl = _settingsModel?.baseUrl ?? 'http://localhost:3000/api';
-      debugPrint('Signup baseUrl: $baseUrl');
-      debugPrint('SettingsModel is null: ${_settingsModel == null}');
+      debugPrint('Signup baseUrl: $_baseUrl');
       final result =
-          await AuthService.signup(baseUrl, email, password, confirmPassword);
+          await AuthService.signup(_baseUrl, email, password, confirmPassword);
       if (result['success']) {
         _setLoading(false);
         return true;

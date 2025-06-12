@@ -6,8 +6,14 @@ import 'models/settings_model.dart';
 import 'screens/login_screen.dart';
 import 'screens/todo_screen.dart';
 import 'services/auth_service.dart';
+import 'services/app_services.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // GetIt 서비스 초기화
+  await AppServices.setupServices();
+
   runApp(MyApp());
 }
 
@@ -16,21 +22,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => SettingsModel()),
-        ChangeNotifierProxyProvider<SettingsModel, UserModel>(
-          create: (_) => UserModel(),
-          update: (_, settings, userModel) =>
-              UserModel(settingsModel: settings),
-        ),
-        ChangeNotifierProxyProvider2<SettingsModel, UserModel, TodoModel>(
-          create: (_) => TodoModel(),
-          update: (_, settings, user, todoModel) =>
-              TodoModel(settingsModel: settings, userModel: user),
-        ),
-        ProxyProvider<SettingsModel, AuthService>(
-          update: (context, settings, _) =>
-              AuthService(baseUrl: settings.baseUrl),
-        ),
+        // GetIt에서 관리되는 모델들을 Provider로 노출
+        ChangeNotifierProvider.value(value: getIt<SettingsModel>()),
+        ChangeNotifierProvider.value(value: getIt<UserModel>()),
+        ChangeNotifierProvider.value(value: getIt<TodoModel>()),
       ],
       child: MaterialApp(
         title: 'QA教育用Todoアプリ',
