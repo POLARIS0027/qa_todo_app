@@ -29,9 +29,9 @@ class Todo {
 
   factory Todo.fromJson(Map<String, dynamic> json) {
     return Todo(
-      id: json['id'],
+      id: json['id'].toString(),
       title: json['title'],
-      isCompleted: json['isCompleted'],
+      isCompleted: json['isCompleted'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
@@ -43,6 +43,8 @@ class TodoModel extends ChangeNotifier {
   String? _editingTodoId;
   String _editingText = '';
   String? _currentUserId;
+  DateTime? _lastToggleTime;
+  static const int _minToggleInterval = 500; // 0.5초
 
   List<Todo> get todos => _todos;
   bool get isLoading => _isLoading;
@@ -122,12 +124,11 @@ class TodoModel extends ChangeNotifier {
     });
   }
 
-  Future<void> addTodo(String title) async {
+  Future<Todo?> addTodo(String title) async {
     if (_currentUserId == null) {
-      return;
+      return null;
     }
 
-    // Bug#3: 空タイトルはチェックするが空白のみは許可、空タイトル時はダミーテキスト追加（易）
     if (title.isEmpty) {
       title = "新しいタスク";
     }
@@ -137,70 +138,58 @@ class TodoModel extends ChangeNotifier {
       final authToken = _authToken;
 
       if (authToken == null) {
-        return;
+        return null;
       }
-
-      // Bug#18: 同時に迅速に追加するときにサーバーリクエストが重複する可能性があります（難易度：高）
-      await Future.delayed(Duration(milliseconds: 100)); // 意図的な遅延
 
       final result = await AuthService.createTodo(
           baseUrl, _currentUserId!, title, authToken);
 
-      // サーバーから受け取ったデータでTodoオブジェクトを作成
-      final newTodo = Todo(
-        id: result['todo']['id'].toString(),
-        title: result['todo']['title'],
-        isCompleted: result['todo']['isCompleted'] ?? false,
-        createdAt: DateTime.parse(result['todo']['createdAt']),
-      );
+      final newTodo = Todo.fromJson(result['todo']);
 
-      _todos.add(newTodo);
-
-      // 추가 후 정렬하여 새로운 Todo가 맨 위로 가게 함
+      _todos.insert(0, newTodo);
       _sortTodos();
-
-      notifyListeners();
+      return newTodo;
     } catch (e) {
       debugPrint('Todo 追加エラー: $e');
-      // Bug#15: ネットワーク失敗時にエラーメッセージを表示しない（中級）
+      return null;
     }
   }
 
   Future<void> toggleTodo(String id) async {
+    final now = DateTime.now();
+
+    if (_lastToggleTime != null &&
+        now.difference(_lastToggleTime!).inMilliseconds < _minToggleInterval) {
+      return;
+    }
+
+    _lastToggleTime = now;
+
     final todoIndex = _todos.indexWhere((todo) => todo.id == id);
     if (todoIndex == -1) return;
 
     final todo = _todos[todoIndex];
-    final newCompletedState = !todo.isCompleted;
+    todo.isCompleted = !todo.isCompleted;
 
-    // 즉시 UI 업데이트 (낙관적 업데이트)
-    _todos[todoIndex].isCompleted = newCompletedState;
-
-    // 완료 상태 변경 후 정렬
     _sortTodos();
-
-    notifyListeners();
 
     try {
       final baseUrl = _baseUrl;
       final authToken = _authToken;
       if (authToken == null) return;
 
-      // 完了状態サーバー保存失敗時にロールバックしない（削除済みバグ）
       await AuthService.updateTodo(baseUrl, id, authToken,
-          isCompleted: newCompletedState);
+          isCompleted: todo.isCompleted);
     } catch (e) {
       debugPrint('Todo 状態変更エラー: $e');
-      // サーバー保存失敗でもUIは既に変更されたまま（バグ）
     }
   }
 
   Future<void> deleteTodo(String id) async {
-    // Bug#4: 削除確認なしで即削除（易）
+    final todoIndex = _todos.indexWhere((todo) => todo.id == id);
+    if (todoIndex == -1) return;
 
-    // 即時UIから削除（楽観的更新）
-    _todos.removeWhere((todo) => todo.id == id);
-    notifyListeners();
+    _todos.removeAt(todoIndex);
 
     try {
       final baseUrl = _baseUrl;
@@ -210,8 +199,6 @@ class TodoModel extends ChangeNotifier {
       await AuthService.deleteTodo(baseUrl, id, authToken);
     } catch (e) {
       debugPrint('Todo 削除エラー: $e');
-      // Bug#15: サーバー削除失敗時にUIから既に削除されたまま（中級）
-      // 実際はロールバックすべき
     }
   }
 
@@ -245,8 +232,6 @@ class TodoModel extends ChangeNotifier {
               title: _editingText);
         } catch (e) {
           debugPrint('Todo 編集エラー: $e');
-          // Bug#16: サーバー編集失敗時に前のタイトルへロールバックしない（中級）
-          // _todos[todoIndex].title = oldTitle; // この行が必要
         }
       }
     }
@@ -256,11 +241,10 @@ class TodoModel extends ChangeNotifier {
   }
 
   void cancelEdit() {
-    // Bug#13: 編集キャンセル時に誤ったテキストが保存される（中級）
     if (_editingTodoId != null) {
       final todoIndex = _todos.indexWhere((todo) => todo.id == _editingTodoId);
       if (todoIndex != -1) {
-        _todos[todoIndex].title = _editingText; // 誤ったロジック: キャンセルなのに保存
+        _todos[todoIndex].title = _editingText;
         notifyListeners();
       }
     }
@@ -271,7 +255,6 @@ class TodoModel extends ChangeNotifier {
 
   // Bug#19: メモリリーク - disposeで解放しない（難易度：高）
   void simulateMemoryLeak() {
-    // 20個以上の時にパフォーマンス問題を起こすコード
     if (_todos.length > 20) {
       for (int i = 0; i < 1000; i++) {
         List<int> heavyList = List.generate(10000, (index) => index);

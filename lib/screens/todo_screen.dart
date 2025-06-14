@@ -11,6 +11,11 @@ class TodoScreen extends StatefulWidget {
 class _TodoScreenState extends State<TodoScreen> {
   final _todoController = TextEditingController();
   final _editController = TextEditingController();
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
+  late List<Todo> _displayedTodos;
+  bool _isInitialLoad = true;
+  bool _isToggling = false; // 연속 토글 방지 플래그
 
   // SnackBar 중복 표시 방지를 위한 플래그들
   bool _todoSnackBarShown = false;
@@ -19,9 +24,9 @@ class _TodoScreenState extends State<TodoScreen> {
   @override
   void initState() {
     super.initState();
-    // 실시간 UI 업데이트를 위한 리스너 추가
     _todoController.addListener(() => setState(() {}));
     _editController.addListener(() => setState(() {}));
+    _displayedTodos = [];
   }
 
   @override
@@ -45,7 +50,6 @@ class _TodoScreenState extends State<TodoScreen> {
     return Colors.grey;
   }
 
-  // SnackBar 표시 함수들
   void _showTodoLimitSnackBar() {
     if (!_todoSnackBarShown) {
       _todoSnackBarShown = true;
@@ -77,18 +81,70 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   Future<void> _addTodo() async {
+    // Bug#3: 空タイトル処理
+    // if (_todoController.text.isEmpty) return;
     final todoModel = Provider.of<TodoModel>(context, listen: false);
-    final title = _todoController.text;
+    final newTodo = await todoModel.addTodo(_todoController.text);
 
-    // Bug#18: 連続クリック防止なし - 高速連打で重複作成（難易度：高）
-    await todoModel.addTodo(title);
+    if (newTodo != null) {
+      _displayedTodos.insert(0, newTodo);
+      _listKey.currentState
+          ?.insertItem(0, duration: Duration(milliseconds: 500));
+    }
     _todoController.clear();
+  }
+
+  void _deleteTodo(Todo todo, int index) {
+    final todoModel = Provider.of<TodoModel>(context, listen: false);
+    todoModel.deleteTodo(todo.id);
+
+    _displayedTodos.removeAt(index);
+    _listKey.currentState?.removeItem(
+      index,
+      (context, animation) => _buildRemovedItem(todo, animation, 'delete'),
+      duration: Duration(milliseconds: 300),
+    );
+  }
+
+  Future<void> _toggleTodo(Todo todo, int index) async {
+    if (_isToggling) return; // 이미 토글 애니메이션이 진행 중이면 무시
+
+    try {
+      _isToggling = true;
+
+      final todoModel = Provider.of<TodoModel>(context, listen: false);
+
+      // 1. 왼쪽으로 슬라이드하며 사라지는 애니메이션 실행
+      _displayedTodos.removeAt(index);
+      _listKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildRemovedItem(todo, animation, 'toggle'),
+        duration: Duration(milliseconds: 400),
+      );
+
+      // 2. 애니메이션이 겹치지 않도록 잠시 대기
+      await Future.delayed(Duration(milliseconds: 200));
+
+      // 3. 데이터 모델 업데이트
+      await todoModel.toggleTodo(todo.id);
+
+      // 4. 정렬된 새 위치 찾기
+      final newIndex = todoModel.todos.indexWhere((t) => t.id == todo.id);
+
+      // 5. 새 위치에 왼쪽에서 나타나는 애니메이션으로 삽입
+      if (newIndex != -1) {
+        _displayedTodos.insert(newIndex, todo);
+        _listKey.currentState
+            ?.insertItem(newIndex, duration: Duration(milliseconds: 400));
+      }
+    } finally {
+      _isToggling = false; // 애니메이션이 끝나면 플래그 해제
+    }
   }
 
   void _showEditDialog(BuildContext context, Todo todo) {
     _editController.text = todo.title;
 
-    // Bug#13: 編集開始時にstartEditingを呼び出す
     final todoModel = Provider.of<TodoModel>(context, listen: false);
     todoModel.startEditing(todo.id, todo.title);
 
@@ -108,7 +164,7 @@ class _TodoScreenState extends State<TodoScreen> {
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(color: _getEditBorderColor(), width: 2),
             ),
-            counterText: '', // 카운터 숨기기
+            counterText: '',
           ),
           onChanged: (value) {
             if (value.length >= 100) {
@@ -139,6 +195,91 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  Widget _buildTodoItem(
+      BuildContext context, Todo todo, int index, Animation<double> animation) {
+    return FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(-0.5, 0), // 왼쪽에서 나타남
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: Card(
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            leading: Checkbox(
+              value: todo.isCompleted,
+              onChanged: (value) => _toggleTodo(todo, index),
+            ),
+            title: Text(
+              todo.title,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                decoration: todo.isCompleted
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+                color: todo.isCompleted ? Colors.grey : Colors.black,
+              ),
+            ),
+            subtitle: Text(
+              '作成日: ${_formatDate(todo.createdAt)}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () => _showEditDialog(context, todo),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteTodo(todo, index),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRemovedItem(
+      Todo todo, Animation<double> animation, String action) {
+    // action: 'delete' (오른쪽), 'toggle' (왼쪽)
+    final offset =
+        action == 'delete' ? const Offset(0.5, 0) : const Offset(-0.5, 0);
+
+    return FadeTransition(
+      opacity: CurvedAnimation(
+          parent: ReverseAnimation(animation), curve: Curves.easeOut),
+      child: SlideTransition(
+        position: Tween<Offset>(begin: Offset.zero, end: const Offset(0.5, 0))
+            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+        child: Card(
+          // 애니메이션 중에도 동일한 모양을 유지
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: ListTile(
+            leading: Checkbox(value: todo.isCompleted, onChanged: null),
+            title: Text(
+              todo.title,
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                decoration: todo.isCompleted
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+                color: todo.isCompleted ? Colors.grey : Colors.black,
+              ),
+            ),
+            subtitle: Text('作成日: ${_formatDate(todo.createdAt)}'),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,104 +303,55 @@ class _TodoScreenState extends State<TodoScreen> {
       ),
       body: Column(
         children: [
-          // Bug#7: 画面回転時にUIレイアウトが崩れる（易）
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: MediaQuery.of(context).orientation == Orientation.landscape
-                ? // 横向き時のみ固定幅で問題発生
-                Row(
-                    children: [
-                      Container(
-                        width: 400, // 横向きで画面を超える幅
-                        child: TextField(
-                          controller: _todoController,
-                          maxLength: 100,
-                          onChanged: (value) {
-                            if (value.length >= 100) {
-                              _showTodoLimitSnackBar();
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: '新しいタスクを入力してください',
-                            border: OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: _getTodoBorderColor()),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: _getTodoBorderColor(), width: 2),
-                            ),
-                            counterText: '', // 카운터 숨기기
-                          ),
-                          onSubmitted: (_) => _addTodo(),
-                        ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _todoController,
+                    maxLength: 100,
+                    onChanged: (value) {
+                      if (value.length >= 100) {
+                        _showTodoLimitSnackBar();
+                      }
+                    },
+                    decoration: InputDecoration(
+                      labelText: '新しいタスクを入力してください',
+                      border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: _getTodoBorderColor()),
                       ),
-                      SizedBox(width: 8),
-                      Container(
-                        width: 80,
-                        child: ElevatedButton(
-                          onPressed: _addTodo,
-                          child: Text('追加'),
-                        ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide:
+                            BorderSide(color: _getTodoBorderColor(), width: 2),
                       ),
-                      SizedBox(width: 8),
-                      Container(
-                        width: 80,
-                        child: ElevatedButton(
-                          onPressed: () {},
-                          child: Text('設定'),
-                        ),
-                      ),
-                    ],
-                  )
-                : // 縦向き時は正常なレスポンシブレイアウト
-                Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _todoController,
-                          maxLength: 100,
-                          onChanged: (value) {
-                            if (value.length >= 100) {
-                              _showTodoLimitSnackBar();
-                            }
-                          },
-                          decoration: InputDecoration(
-                            labelText: '新しいタスクを入力してください',
-                            border: OutlineInputBorder(),
-                            enabledBorder: OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: _getTodoBorderColor()),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                  color: _getTodoBorderColor(), width: 2),
-                            ),
-                            counterText: '', // 카운터 숨기기
-                          ),
-                          onSubmitted: (_) => _addTodo(),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _addTodo,
-                        child: Text('追加'),
-                      ),
-                    ],
+                      counterText: '',
+                    ),
+                    onSubmitted: (_) => _addTodo(),
                   ),
+                ),
+                SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _addTodo,
+                  child: Text('追加'),
+                ),
+              ],
+            ),
           ),
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
-                // Bug#19: パフォーマンス問題シミュレーション呼び出し（難易度：高）
-                todoModel.simulateMemoryLeak();
-
                 if (todoModel.isLoading) {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                if (todoModel.todos.isEmpty) {
+                if (_isInitialLoad) {
+                  _displayedTodos = List.from(todoModel.todos);
+                  _isInitialLoad = false;
+                }
+
+                if (_displayedTodos.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -277,57 +369,12 @@ class _TodoScreenState extends State<TodoScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: todoModel.todos.length,
-                  itemBuilder: (context, index) {
-                    final todo = todoModel.todos[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: ListTile(
-                        leading: Checkbox(
-                          value: todo.isCompleted,
-                          onChanged: (value) {
-                            todoModel.toggleTodo(todo.id);
-                          },
-                        ),
-                        title: Text(
-                          todo.title,
-                          // Bug#14: 17文字以上のタイトルでUIオーバーフロー（中級）
-                          // overflow: TextOverflow.ellipsis, を意図的に削除しテキストが溢れる
-                          maxLines: 1,
-                          softWrap: false,
-                          style: TextStyle(
-                            // Bug#5: 完了項目が取り消し線ではなく太字で表示（易）
-                            fontWeight: todo.isCompleted
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            color:
-                                todo.isCompleted ? Colors.grey : Colors.black,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '作成日: ${_formatDate(todo.createdAt)}',
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit),
-                              onPressed: () => _showEditDialog(context, todo),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                // Bug#4: 削除確認ダイアログなしで即削除（易）
-                                todoModel.deleteTodo(todo.id);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                return AnimatedList(
+                  key: _listKey,
+                  initialItemCount: _displayedTodos.length,
+                  itemBuilder: (context, index, animation) {
+                    final todo = _displayedTodos[index];
+                    return _buildTodoItem(context, todo, index, animation);
                   },
                 );
               },
@@ -335,12 +382,8 @@ class _TodoScreenState extends State<TodoScreen> {
           ),
         ],
       ),
-      // Bug#6: FloatingActionButtonと下部追加ボタンが重複して存在（易）
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // 同じ機能のボタンが2つ（上の追加ボタンと同じ）
-          _addTodo();
-        },
+        onPressed: _addTodo,
         child: Icon(Icons.add),
       ),
     );
