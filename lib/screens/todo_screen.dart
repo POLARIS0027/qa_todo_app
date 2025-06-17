@@ -342,7 +342,7 @@ class _TodoScreenState extends State<TodoScreen> {
                 else
                   SizedBox(
                     // 가로 모드에서 화면 너비보다 약간 작은 고정 폭을 주어 Overflow 유발
-                    width: screenWidth - 100,
+                    width: screenWidth - 50,
                     child: textField,
                   ),
                 SizedBox(width: 8),
