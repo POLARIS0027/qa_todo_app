@@ -265,6 +265,12 @@ class _LoginScreenState extends State<LoginScreen>
               TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'パスワードを入力してください';
+                  }
+                  return null;
+                },
                 onChanged: (value) {
                   if (value.length >= 20) {
                     _showPasswordLimitSnackBar();
@@ -350,6 +356,12 @@ class _LoginScreenState extends State<LoginScreen>
               TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'パスワードを入力してください';
+                  }
+                  return null;
+                },
                 onChanged: (value) {
                   if (value.length >= 20) {
                     _showPasswordLimitSnackBar();
@@ -373,6 +385,13 @@ class _LoginScreenState extends State<LoginScreen>
               TextFormField(
                 controller: _confirmPasswordController,
                 maxLength: 20,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'パスワード確認を入力してください';
+                  }
+                  // Bug#10: パスワード確認検証なし - 意図的に一致検証をスキップ
+                  return null;
+                },
                 onChanged: (value) {
                   if (value.length >= 20) {
                     _showConfirmPasswordLimitSnackBar();
