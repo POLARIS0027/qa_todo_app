@@ -216,9 +216,9 @@ class _TodoScreenState extends State<TodoScreen> {
               maxLines: 1,
               softWrap: false,
               style: TextStyle(
-                decoration: todo.isCompleted
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
+                decoration: TextDecoration.none,
+                fontWeight:
+                    todo.isCompleted ? FontWeight.bold : FontWeight.normal,
                 color: todo.isCompleted ? Colors.grey : Colors.black,
               ),
             ),
@@ -267,9 +267,9 @@ class _TodoScreenState extends State<TodoScreen> {
               maxLines: 1,
               softWrap: false,
               style: TextStyle(
-                decoration: todo.isCompleted
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
+                decoration: TextDecoration.none,
+                fontWeight:
+                    todo.isCompleted ? FontWeight.bold : FontWeight.normal,
                 color: todo.isCompleted ? Colors.grey : Colors.black,
               ),
             ),
