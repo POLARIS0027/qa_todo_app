@@ -126,6 +126,15 @@ class UserModel extends ChangeNotifier {
       _username = savedUsername;
       _authToken = savedToken;
       _isLoggedIn = true;
+
+      // 앱 재시작 시 Todo 데이터 로드
+      try {
+        await getIt<TodoModel>().refreshUser();
+      } catch (e) {
+        debugPrint('Auto-login: TodoModel refresh error: $e');
+        // 여기서 에러를 처리할 수 있습니다. 예를 들어 로그아웃 시키기 등.
+      }
+
       notifyListeners();
     }
   }
