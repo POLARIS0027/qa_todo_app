@@ -282,6 +282,32 @@ class _TodoScreenState extends State<TodoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final orientation = MediaQuery.of(context).orientation;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // TextField 위젯을 분리하여 코드 중복 방지
+    final textField = TextField(
+      controller: _todoController,
+      maxLength: 100,
+      onChanged: (value) {
+        if (value.length >= 100) {
+          _showTodoLimitSnackBar();
+        }
+      },
+      decoration: InputDecoration(
+        labelText: '新しいタスクを入力してください',
+        border: OutlineInputBorder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: _getTodoBorderColor()),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: _getTodoBorderColor(), width: 2),
+        ),
+        counterText: '',
+      ),
+      onSubmitted: (_) => _addTodo(),
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text('タスク一覧'),
@@ -307,30 +333,18 @@ class _TodoScreenState extends State<TodoScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _todoController,
-                    maxLength: 100,
-                    onChanged: (value) {
-                      if (value.length >= 100) {
-                        _showTodoLimitSnackBar();
-                      }
-                    },
-                    decoration: InputDecoration(
-                      labelText: '新しいタスクを入力してください',
-                      border: OutlineInputBorder(),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: _getTodoBorderColor()),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide:
-                            BorderSide(color: _getTodoBorderColor(), width: 2),
-                      ),
-                      counterText: '',
-                    ),
-                    onSubmitted: (_) => _addTodo(),
+                // Bug#7: 画面回転時のUIレイアウト崩れ(易)
+                // 화면 방향에 따라 다른 위젯을 사용하여 버그를 재현
+                if (orientation == Orientation.portrait)
+                  Expanded(
+                    child: textField,
+                  )
+                else
+                  SizedBox(
+                    // 가로 모드에서 화면 너비보다 약간 작은 고정 폭을 주어 Overflow 유발
+                    width: screenWidth - 100,
+                    child: textField,
                   ),
-                ),
                 SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _addTodo,
