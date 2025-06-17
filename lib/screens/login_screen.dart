@@ -10,6 +10,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -112,6 +113,9 @@ class _LoginScreenState extends State<LoginScreen>
   void _handleLogin() async {
     // Bug#11: ネットワーク失敗時の無限ローディング (中級)
     // ネットワーク接続がない時にローディングが続き、エラーメッセージや再試行オプションがない
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     final userModel = Provider.of<UserModel>(context, listen: false);
     final success =
         await userModel.login(_emailController.text, _passwordController.text);
@@ -145,6 +149,10 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   void _handleSignup() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     final userModel = Provider.of<UserModel>(context, listen: false);
     final success = await userModel.signup(
       _emailController.text,
@@ -199,12 +207,15 @@ class _LoginScreenState extends State<LoginScreen>
           },
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildLoginTab(),
-          _buildRegisterTab(),
-        ],
+      body: Form(
+        key: _formKey,
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildLoginTab(),
+            _buildRegisterTab(),
+          ],
+        ),
       ),
     );
   }
@@ -212,14 +223,25 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLoginTab() {
     return Consumer<UserModel>(
       builder: (context, userModel, child) {
-        return Padding(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextField(
+              TextFormField(
                 controller: _emailController,
                 maxLength: 50,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'メールアドレスを入力してください';
+                  }
+                  final emailRegex =
+                      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$');
+                  if (!emailRegex.hasMatch(value)) {
+                    return '有効なメールアドレスを入力してください';
+                  }
+                  return null;
+                },
                 onChanged: (value) {
                   if (value.length >= 50) {
                     _showEmailLimitSnackBar();
@@ -240,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen>
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
-              TextField(
+              TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
                 onChanged: (value) {
@@ -286,14 +308,25 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildRegisterTab() {
     return Consumer<UserModel>(
       builder: (context, userModel, child) {
-        return Padding(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextField(
+              TextFormField(
                 controller: _emailController,
                 maxLength: 50,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'メールアドレスを入力してください';
+                  }
+                  final emailRegex =
+                      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$');
+                  if (!emailRegex.hasMatch(value)) {
+                    return '有効なメールアドレスを入力してください';
+                  }
+                  return null;
+                },
                 onChanged: (value) {
                   if (value.length >= 50) {
                     _showEmailLimitSnackBar();
@@ -314,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen>
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
-              TextField(
+              TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
                 onChanged: (value) {
@@ -337,7 +370,7 @@ class _LoginScreenState extends State<LoginScreen>
                 obscureText: true,
               ),
               SizedBox(height: 16),
-              TextField(
+              TextFormField(
                 controller: _confirmPasswordController,
                 maxLength: 20,
                 onChanged: (value) {
