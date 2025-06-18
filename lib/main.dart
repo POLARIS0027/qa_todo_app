@@ -5,7 +5,6 @@ import 'models/user_model.dart';
 import 'models/settings_model.dart';
 import 'screens/login_screen.dart';
 import 'screens/todo_screen.dart';
-import 'services/auth_service.dart';
 import 'services/app_services.dart';
 
 void main() async {

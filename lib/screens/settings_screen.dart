@@ -41,12 +41,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _validateAndUpdate() {
-    final settings = Provider.of<SettingsModel>(context, listen: false);
-    setState(() {
-      _validationErrors = settings.validateSettings();
-    });
-  }
 
   Future<void> _testConnection() async {
     setState(() {

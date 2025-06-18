@@ -359,6 +359,9 @@ class _TodoScreenState extends State<TodoScreen> {
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
+                // Bug#19: メモリリーク - 意図的に呼び出し
+                todoModel.simulateMemoryLeak();
+
                 if (todoModel.isLoading) {
                   return Center(child: CircularProgressIndicator());
                 }
