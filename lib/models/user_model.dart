@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/app_services.dart';
 import '../models/todo_model.dart';
+import '../models/settings_model.dart';
 
 class UserModel extends ChangeNotifier {
   String? _username;
@@ -23,7 +24,7 @@ class UserModel extends ChangeNotifier {
   }
 
   // GetIt을 통해 ApiService 접근
-  String get _baseUrl => getIt<ApiService>().baseUrl;
+  String get _baseUrl => getIt<SettingsModel>().baseUrl;
 
   // Bug#8: トークン まれそう チェック ない
   // アプリ 再起動 時 トークン まれそう どうか 確認せず 自動 ログイン 処理

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/app_services.dart';
 import '../models/user_model.dart';
+import '../models/settings_model.dart';
 import 'dart:convert';
 
 class Todo {
@@ -57,7 +58,7 @@ class TodoModel extends ChangeNotifier {
   }
 
   // GetIt을 통해 필요한 서비스들에 접근
-  String get _baseUrl => getIt<ApiService>().baseUrl;
+  String get _baseUrl => getIt<SettingsModel>().baseUrl;
   UserModel get _userModel => getIt<UserModel>();
   String? get _authToken => _userModel.authToken;
 
