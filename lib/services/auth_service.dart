@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -21,7 +22,7 @@ class AuthService {
           'email': email,
           'password': password, // 本来はハッシュ化すべき
         }),
-      );
+      ); // 
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -57,69 +58,23 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {'success': true, 'message': '会員登録成功'};
       } else {
         debugPrint('会員登録失敗 - ステータスコード: ${response.statusCode}');
         debugPrint('会員登録失敗 - 応答: ${response.body}');
-        return {'success': false, 'message': '会員登録失敗: ${response.statusCode}'};
+        return {'success': false, 'message': '${response.statusCode}, ${response.headers}, ${response.body}'};
       }
-    } catch (e) {
+    } 
+    // エラー文言をサーバーからもらったまま返す。
+    // on TimeoutException catch (_) {
+    //   debugPrint('会員登録Timeoutエラー');
+    //   return {'success': false, 'message': 'サーバー接続エラー: Timeoutしました。'};
+    // }
+     catch (e) {
       debugPrint('会員登録ネットワークエラー: $e');
-      throw Exception('ネットワークエラー: ${e.toString()}');
-    }
-  }
-
-  // Instanceメソッド（従来）
-  Future<Map<String, dynamic>> loginInstance(
-      String email, String password) async {
-    try {
-      // Bug#18: パスワードを平文で送信（難易度：高・セキュリティ）
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password, // 本来はハッシュ化すべき
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        // Bug#19: サーバーエラーメッセージをそのまま表示（難易度：高・セキュリティ）
-        final errorBody = jsonDecode(response.body);
-        throw Exception('ログイン失敗: ${errorBody['message']}');
-      }
-    } catch (e) {
-      throw Exception('ネットワークエラー: ${e.toString()}');
-    }
-  }
-
-  Future<Map<String, dynamic>> register(String email, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/register'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        final errorBody = jsonDecode(response.body);
-        throw Exception('会員登録失敗: ${errorBody['message']}');
-      }
-    } catch (e) {
       throw Exception('ネットワークエラー: ${e.toString()}');
     }
   }
