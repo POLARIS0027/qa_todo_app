@@ -247,33 +247,36 @@ class _TodoScreenState extends State<TodoScreen> {
 
   Widget _buildRemovedItem(
       Todo todo, Animation<double> animation, String action) {
-    // action: 'delete' (오른쪽), 'toggle' (왼쪽)
-    final offset =
+    // action에 따라 슬라이드 방향 결정
+    final endOffset =
         action == 'delete' ? const Offset(0.5, 0) : const Offset(-0.5, 0);
 
-    return FadeTransition(
-      opacity: CurvedAnimation(
-          parent: ReverseAnimation(animation), curve: Curves.easeOut),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: Offset.zero, end: const Offset(0.5, 0))
-            .animate(CurvedAnimation(parent: animation, curve: Curves.easeOut)),
-        child: Card(
-          // 애니메이션 중에도 동일한 모양을 유지
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: ListTile(
-            leading: Checkbox(value: todo.isCompleted, onChanged: null),
-            title: Text(
-              todo.title,
-              maxLines: 1,
-              softWrap: false,
-              style: TextStyle(
-                decoration: TextDecoration.none,
-                fontWeight:
-                    todo.isCompleted ? FontWeight.bold : FontWeight.normal,
-                color: todo.isCompleted ? Colors.grey : Colors.black,
+    return SizeTransition(
+      sizeFactor: animation, // 세로 크기를 부드럽게 줄여 점프 현상 방지
+      child: FadeTransition(
+        opacity: CurvedAnimation(
+            parent: ReverseAnimation(animation), curve: Curves.easeOut),
+        child: SlideTransition(
+          position: Tween<Offset>(begin: Offset.zero, end: endOffset).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOut)),
+          child: Card(
+            // 애니메이션 중에도 동일한 모양을 유지
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: ListTile(
+              leading: Checkbox(value: todo.isCompleted, onChanged: null),
+              title: Text(
+                todo.title,
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  decoration: TextDecoration.none,
+                  fontWeight:
+                      todo.isCompleted ? FontWeight.bold : FontWeight.normal,
+                  color: todo.isCompleted ? Colors.grey : Colors.black,
+                ),
               ),
+              subtitle: Text('作成日: ${_formatDate(todo.createdAt)}'),
             ),
-            subtitle: Text('作成日: ${_formatDate(todo.createdAt)}'),
           ),
         ),
       ),
