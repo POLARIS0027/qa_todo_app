@@ -63,8 +63,8 @@ class TodoModel extends ChangeNotifier {
 
   Future<void> _loadCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
-    _currentUserId = prefs.getString('username'); // メールアドレス를 userIdとして使用
-    print('DEBUG _loadCurrentUser: _currentUserId = $_currentUserId');
+    _currentUserId = prefs.getString('username'); // メールアドレスを userIdとして使用
+    debugPrint('DEBUG _loadCurrentUser: _currentUserId = $_currentUserId');
     if (_currentUserId != null) {
       await loadTodos();
     }
@@ -72,7 +72,7 @@ class TodoModel extends ChangeNotifier {
 
   // 로그인 후 사용자 정보 새로고침
   Future<void> refreshUser() async {
-    print('DEBUG refreshUser: called');
+    debugPrint('DEBUG refreshUser: called');
     await _loadCurrentUser();
   }
 

@@ -4,8 +4,10 @@ import '../models/user_model.dart';
 import '../screens/settings_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen>
@@ -66,13 +68,13 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_emailSnackBarShown) {
       _emailSnackBarShown = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('メールアドレスは50文字までです'),
           duration: Duration(seconds: 2),
         ),
       );
       // 2초 후 다시 표시 가능하도록 설정
-      Future.delayed(Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 2), () {
         _emailSnackBarShown = false;
       });
     }
@@ -82,12 +84,12 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_passwordSnackBarShown) {
       _passwordSnackBarShown = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('パスワードは20文字までです'),
           duration: Duration(seconds: 2),
         ),
       );
-      Future.delayed(Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 2), () {
         _passwordSnackBarShown = false;
       });
     }
@@ -97,14 +99,14 @@ class _LoginScreenState extends State<LoginScreen>
     if (!_confirmPasswordSnackBarShown) {
       _confirmPasswordSnackBarShown = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('パスワード確認は20文字までです'),
           // バグ#12: パスワード確認のエラーメッセージが赤色になっている(易)
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
       );
-      Future.delayed(Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 2), () {
         _confirmPasswordSnackBarShown = false;
       });
     }
@@ -186,16 +188,16 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('QA教育用Todoアプリ'),
+        title: const Text('QA教育用Todoアプリ'),
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: const Icon(Icons.settings),
             onPressed: _openSettings,
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: [
+          tabs: const [
             Tab(text: 'ログイン'),
             // Bug#1: UIのタイポ「会員登録」->「会院登録」(易)
             Tab(text: '会院登録'),
@@ -249,7 +251,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 decoration: InputDecoration(
                   labelText: 'メールアドレス',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: _getEmailBorderColor()),
                   ),
@@ -261,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
@@ -278,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 decoration: InputDecoration(
                   labelText: 'パスワード',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: _getPasswordBorderColor()),
                   ),
@@ -290,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 obscureText: false,
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -301,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen>
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text('ログイン'),
+                      : const Text('ログイン'),
                 ),
               ),
             ],
@@ -340,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 decoration: InputDecoration(
                   labelText: 'メールアドレス',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: _getEmailBorderColor()),
                   ),
@@ -352,7 +354,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _passwordController,
                 maxLength: 20,
@@ -369,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 decoration: InputDecoration(
                   labelText: 'パスワード',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: _getPasswordBorderColor()),
                   ),
@@ -381,7 +383,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 obscureText: true,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _confirmPasswordController,
                 maxLength: 20,
@@ -399,7 +401,7 @@ class _LoginScreenState extends State<LoginScreen>
                 },
                 decoration: InputDecoration(
                   labelText: 'パスワード確認',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   enabledBorder: OutlineInputBorder(
                     borderSide:
                         BorderSide(color: _getConfirmPasswordBorderColor()),
@@ -412,7 +414,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 obscureText: true,
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -421,12 +423,12 @@ class _LoginScreenState extends State<LoginScreen>
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: const CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text('会員登録'),
+                      : const Text('会員登録'),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
                   _tabController.animateTo(0);
@@ -434,7 +436,7 @@ class _LoginScreenState extends State<LoginScreen>
                     _isLogin = true;
                   });
                 },
-                child: Text('すでにアカウントをお持ちですか？ログイン'),
+                child: const Text('すでにアカウントをお持ちですか？ログイン'),
               ),
             ],
           ),
