@@ -52,8 +52,11 @@ class AuthService {
         }
       }
     } catch (e) {
-      // この部分でBug#10発生: exceptionを投げるとUserModelでcatchされ無限ローディング
-      throw Exception('ネットワークエラー: ${e.toString()}');
+      // TimeoutException과 다른 네트워크 에러를 적절히 처리
+      if (e is TimeoutException) {
+        return {'success': false, 'message': '接続がタイムアウトしました。サーバーの状態を確認してください。'};
+      }
+      return {'success': false, 'message': 'ネットワーク接続を確認してください。'};
     }
   }
 
@@ -97,7 +100,11 @@ class AuthService {
     // }
     catch (e) {
       debugPrint('会員登録ネットワークエラー: $e');
-      throw Exception('ネットワークエラー: ${e.toString()}');
+      // TimeoutException과 다른 네트워크 에러를 적절히 처리
+      if (e is TimeoutException) {
+        return {'success': false, 'message': '接続がタイムアウトしました。サーバーの状態を確認してください。'};
+      }
+      return {'success': false, 'message': 'ネットワーク接続を確認してください。'};
     }
   }
 
@@ -111,7 +118,7 @@ class AuthService {
             Uri.parse('$baseUrl/todos?userId=$userId'),
             headers: networkService.authHeaders(authToken),
           )
-          .timeout(Duration(seconds: networkService.timeout));
+          .timeout(Duration(seconds: 10)); // Todo 작업은 10초 타임아웃
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -128,14 +135,16 @@ class AuthService {
       String baseUrl, String userId, String title, String authToken) async {
     final networkService = getIt<NetworkService>();
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/todos'),
-        headers: networkService.authHeaders(authToken),
-        body: jsonEncode({
-          'userId': userId,
-          'title': title,
-        }),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/todos'),
+            headers: networkService.authHeaders(authToken),
+            body: jsonEncode({
+              'userId': userId,
+              'title': title,
+            }),
+          )
+          .timeout(Duration(seconds: 10)); // Todo 작업은 10초 타임아웃
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -162,7 +171,7 @@ class AuthService {
             headers: networkService.authHeaders(authToken),
             body: jsonEncode(body),
           )
-          .timeout(Duration(seconds: networkService.timeout));
+          .timeout(Duration(seconds: 10)); // Todo 작업은 10초 타임아웃
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -183,7 +192,7 @@ class AuthService {
             Uri.parse('$baseUrl/todos/$todoId'),
             headers: networkService.authHeaders(authToken),
           )
-          .timeout(Duration(seconds: networkService.timeout));
+          .timeout(Duration(seconds: 10)); // Todo 작업은 10초 타임아웃
 
       if (response.statusCode != 200) {
         throw Exception('Todo削除失敗');

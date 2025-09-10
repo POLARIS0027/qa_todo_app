@@ -56,9 +56,8 @@ class UserModel extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      // Bug#11: ネットワークエラー時にローディング状態を解除しない
-      // _setLoading(false); // この行を削除して無限ローディングバグを実装
       _setError('ネットワークエラー: ${e.toString()}');
+      _setLoading(false); // 무한로딩 방지
       debugPrint('Login error: $e');
       return false;
     }

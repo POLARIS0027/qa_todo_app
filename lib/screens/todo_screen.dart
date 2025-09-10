@@ -90,13 +90,27 @@ class _TodoScreenState extends State<TodoScreen> {
       _displayedTodos.insert(0, newTodo);
       _listKey.currentState
           ?.insertItem(0, duration: Duration(milliseconds: 500));
+      todoModel.clearError(); // 성공 시 에러 클리어
+    } else if (todoModel.errorMessage != null) {
+      // 에러 발생 시 SnackBar 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(todoModel.errorMessage!)),
+      );
     }
     _todoController.clear();
   }
 
-  void _deleteTodo(Todo todo, int index) {
+  Future<void> _deleteTodo(Todo todo, int index) async {
     final todoModel = Provider.of<TodoModel>(context, listen: false);
-    todoModel.deleteTodo(todo.id);
+    await todoModel.deleteTodo(todo.id);
+
+    if (todoModel.errorMessage != null) {
+      // 에러 발생 시 SnackBar 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(todoModel.errorMessage!)),
+      );
+      return; // 에러 시 애니메이션 실행하지 않음
+    }
 
     _displayedTodos.removeAt(index);
     _listKey.currentState?.removeItem(
@@ -114,28 +128,40 @@ class _TodoScreenState extends State<TodoScreen> {
 
       final todoModel = Provider.of<TodoModel>(context, listen: false);
 
-      // 1. 왼쪽으로 슬라이드하며 사라지는 애니메이션 실행
+      // 1. 서버 업데이트 시도 (UI 상태는 아직 변경하지 않음)
+      await todoModel.toggleTodo(todo.id);
+
+      // 2. 에러 체크
+      if (todoModel.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(todoModel.errorMessage!)),
+        );
+        return; // 에러 시 UI 변경 없이 종료
+      }
+
+      // 3. 성공 시에만 애니메이션 실행
+      // 업데이트된 Todo 객체 가져오기
+      final updatedTodo = todoModel.todos.firstWhere((t) => t.id == todo.id);
+
+      // 현재 위치에서 제거 애니메이션
       _displayedTodos.removeAt(index);
       _listKey.currentState?.removeItem(
         index,
         (context, animation) => _buildRemovedItem(todo, animation, 'toggle'),
-        duration: Duration(milliseconds: 400),
+        duration: Duration(milliseconds: 300),
       );
 
-      // 2. 애니메이션이 겹치지 않도록 잠시 대기
-      await Future.delayed(Duration(milliseconds: 200));
+      // 애니메이션 완료 대기
+      await Future.delayed(Duration(milliseconds: 150));
 
-      // 3. 데이터 모델 업데이트
-      await todoModel.toggleTodo(todo.id);
-
-      // 4. 정렬된 새 위치 찾기
+      // 새로운 정렬된 위치 찾기
       final newIndex = todoModel.todos.indexWhere((t) => t.id == todo.id);
 
-      // 5. 새 위치에 왼쪽에서 나타나는 애니메이션으로 삽입
+      // 새 위치에 업데이트된 Todo로 삽입 애니메이션
       if (newIndex != -1) {
-        _displayedTodos.insert(newIndex, todo);
+        _displayedTodos.insert(newIndex, updatedTodo);
         _listKey.currentState
-            ?.insertItem(newIndex, duration: Duration(milliseconds: 400));
+            ?.insertItem(newIndex, duration: Duration(milliseconds: 300));
       }
     } finally {
       _isToggling = false; // 애니메이션이 끝나면 플래그 해제
@@ -206,10 +232,17 @@ class _TodoScreenState extends State<TodoScreen> {
             child: Text('キャンセル'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final todoModel = Provider.of<TodoModel>(context, listen: false);
-              todoModel.saveEdit();
+              await todoModel.saveEdit();
               Navigator.of(context).pop();
+
+              // 에러 체크
+              if (todoModel.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(todoModel.errorMessage!)),
+                );
+              }
             },
             child: Text('保存'),
           ),
@@ -385,9 +418,9 @@ class _TodoScreenState extends State<TodoScreen> {
                   _isInitialLoad = false;
                 }
 
-                // Bug#8 수정: Todo가 모두 삭제되어 실제로 0개가 되었을 때 빈 화면 표시
+                // Bug#8 수정: Todo가 모두 삭제되어 실제로 0개가 되었을 때 동기화
                 if (todoModel.todos.isEmpty) {
-                  _displayedTodos.clear(); // 표시용 리스트도 비우기
+                  _displayedTodos.clear();
                 }
 
                 if (_displayedTodos.isEmpty) {

@@ -44,12 +44,14 @@ class TodoModel extends ChangeNotifier {
   String _editingText = '';
   String? _currentUserId;
   DateTime? _lastToggleTime;
+  String? _errorMessage;
   static const int _minToggleInterval = 500; // 0.5초
 
   List<Todo> get todos => _todos;
   bool get isLoading => _isLoading;
   String? get editingTodoId => _editingTodoId;
   String get editingText => _editingText;
+  String? get errorMessage => _errorMessage;
 
   // GetIt 사용으로 생성자 단순화
   TodoModel() {
@@ -74,6 +76,16 @@ class TodoModel extends ChangeNotifier {
   Future<void> refreshUser() async {
     debugPrint('DEBUG refreshUser: called');
     await _loadCurrentUser();
+  }
+
+  void _setError(String error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 
   Future<void> loadTodos() async {
@@ -151,6 +163,7 @@ class TodoModel extends ChangeNotifier {
       return newTodo;
     } catch (e) {
       debugPrint('Todo 追加エラー: $e');
+      _setError('タスクの追加に失敗しました。ネットワーク接続を確認してください。');
       return null;
     }
   }
@@ -169,19 +182,25 @@ class TodoModel extends ChangeNotifier {
     if (todoIndex == -1) return;
 
     final todo = _todos[todoIndex];
-    todo.isCompleted = !todo.isCompleted;
-
-    _sortTodos();
+    final originalState = todo.isCompleted; // 원래 상태 저장
 
     try {
       final baseUrl = _baseUrl;
       final authToken = _authToken;
       if (authToken == null) return;
 
+      // 서버 업데이트 먼저 시도
       await AuthService.updateTodo(baseUrl, id, authToken,
-          isCompleted: todo.isCompleted);
+          isCompleted: !originalState);
+
+      // 서버 성공 시에만 UI 상태 변경
+      todo.isCompleted = !originalState;
+      _sortTodos();
+      notifyListeners();
     } catch (e) {
       debugPrint('Todo 状態変更エラー: $e');
+      _setError('タスクの状態変更に失敗しました。ネットワーク接続を確認してください。');
+      // 에러 시 원래 상태 유지 (변경하지 않음)
     }
   }
 
@@ -199,6 +218,7 @@ class TodoModel extends ChangeNotifier {
       await AuthService.deleteTodo(baseUrl, id, authToken);
     } catch (e) {
       debugPrint('Todo 削除エラー: $e');
+      _setError('タスクの削除に失敗しました。ネットワーク接続を確認してください。');
     }
   }
 
@@ -232,6 +252,7 @@ class TodoModel extends ChangeNotifier {
               title: _editingText);
         } catch (e) {
           debugPrint('Todo 編集エラー: $e');
+          _setError('タスクの編集に失敗しました。ネットワーク接続を確認してください。');
         }
       }
     }
