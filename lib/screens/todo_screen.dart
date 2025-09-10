@@ -142,6 +142,29 @@ class _TodoScreenState extends State<TodoScreen> {
     }
   }
 
+  void _showDeleteConfirmDialog(BuildContext context, Todo todo, int index) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('削除確認'),
+        content: Text('「${todo.title}」を削除しますか？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteTodo(todo, index);
+            },
+            child: Text('削除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditDialog(BuildContext context, Todo todo) {
     _editController.text = todo.title;
 
@@ -213,12 +236,13 @@ class _TodoScreenState extends State<TodoScreen> {
             ),
             title: Text(
               todo.title,
-              maxLines: 1,
-              softWrap: false,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                decoration: TextDecoration.none,
-                fontWeight:
-                    todo.isCompleted ? FontWeight.bold : FontWeight.normal,
+                decoration: todo.isCompleted
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+                fontWeight: FontWeight.normal,
                 color: todo.isCompleted ? Colors.grey : Colors.black,
               ),
             ),
@@ -235,7 +259,8 @@ class _TodoScreenState extends State<TodoScreen> {
                 ),
                 IconButton(
                   icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteTodo(todo, index),
+                  onPressed: () =>
+                      _showDeleteConfirmDialog(context, todo, index),
                 ),
               ],
             ),
@@ -266,12 +291,13 @@ class _TodoScreenState extends State<TodoScreen> {
               leading: Checkbox(value: todo.isCompleted, onChanged: null),
               title: Text(
                 todo.title,
-                maxLines: 1,
-                softWrap: false,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  decoration: TextDecoration.none,
-                  fontWeight:
-                      todo.isCompleted ? FontWeight.bold : FontWeight.normal,
+                  decoration: todo.isCompleted
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                  fontWeight: FontWeight.normal,
                   color: todo.isCompleted ? Colors.grey : Colors.black,
                 ),
               ),
@@ -336,18 +362,9 @@ class _TodoScreenState extends State<TodoScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                // Bug#7: 画面回転時のUIレイアウト崩れ(易)
-                // 화면 방향에 따라 다른 위젯을 사용하여 버그를 재현
-                if (orientation == Orientation.portrait)
-                  Expanded(
-                    child: textField,
-                  )
-                else
-                  SizedBox(
-                    // 가로 모드에서 화면 너비보다 약간 작은 고정 폭을 주어 Overflow 유발
-                    width: screenWidth - 50,
-                    child: textField,
-                  ),
+                Expanded(
+                  child: textField,
+                ),
                 SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: _addTodo,
@@ -359,9 +376,6 @@ class _TodoScreenState extends State<TodoScreen> {
           Expanded(
             child: Consumer<TodoModel>(
               builder: (context, todoModel, child) {
-                // Bug#19: メモリリーク - 意図的に呼び出し
-                todoModel.simulateMemoryLeak();
-
                 if (todoModel.isLoading) {
                   return Center(child: CircularProgressIndicator());
                 }
@@ -369,6 +383,11 @@ class _TodoScreenState extends State<TodoScreen> {
                 if (_isInitialLoad) {
                   _displayedTodos = List.from(todoModel.todos);
                   _isInitialLoad = false;
+                }
+
+                // Bug#8 수정: Todo가 모두 삭제되어 실제로 0개가 되었을 때 빈 화면 표시
+                if (todoModel.todos.isEmpty) {
+                  _displayedTodos.clear(); // 표시용 리스트도 비우기
                 }
 
                 if (_displayedTodos.isEmpty) {
@@ -401,10 +420,6 @@ class _TodoScreenState extends State<TodoScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTodo,
-        child: Icon(Icons.add),
       ),
     );
   }

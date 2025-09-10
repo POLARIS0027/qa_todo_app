@@ -2,10 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
 import '../services/network_service.dart';
 import '../services/app_services.dart';
 
 class AuthService {
+  // 패스워드 해시화 함수
+  static String hashPassword(String password) {
+    final bytes = utf8.encode(password);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
   // Staticメソッド追加（UserModelで使用）
   static Future<Map<String, dynamic>> login(
       String baseUrl, String email, String password) async {
@@ -18,7 +26,7 @@ class AuthService {
             headers: networkService.defaultHeaders,
             body: jsonEncode({
               'email': email,
-              'password': password, // 本来はハッシュ化すべき
+              'password': hashPassword(password),
             }),
           )
           .timeout(Duration(seconds: networkService.timeout));
@@ -31,12 +39,16 @@ class AuthService {
           'token': responseData['token']
         };
       } else {
-        // Bug#19: サーバーエラーメッセージをそのまま表示（難易度：高・セキュリティ）
         try {
           final errorData = jsonDecode(response.body);
-          return {'success': false, 'message': errorData['error'] ?? 'ログイン失敗'};
+          // 서버에서 보낸 "error:" 뒤의 메시지만 추출
+          String errorMessage = errorData['error'] ?? 'ログイン失敗';
+          if (errorMessage.contains('error:')) {
+            errorMessage = errorMessage.split('error:').last.trim();
+          }
+          return {'success': false, 'message': errorMessage};
         } catch (e) {
-          return {'success': false, 'message': 'サーバー応答パース失敗: ${response.body}'};
+          return {'success': false, 'message': 'ログイン失敗'};
         }
       }
     } catch (e) {
@@ -55,7 +67,7 @@ class AuthService {
             headers: networkService.defaultHeaders,
             body: jsonEncode({
               'email': email,
-              'password': password,
+              'password': hashPassword(password),
             }),
           )
           .timeout(Duration(seconds: networkService.timeout));
@@ -65,15 +77,25 @@ class AuthService {
       } else {
         debugPrint('会員登録失敗 - ステータスコード: ${response.statusCode}');
         debugPrint('会員登録失敗 - 応答: ${response.body}');
-        return {'success': false, 'message': '${response.statusCode}, ${response.headers}, ${response.body}'};
+        try {
+          final errorData = jsonDecode(response.body);
+          // 서버에서 보낸 "error:" 뒤의 메시지만 추출
+          String errorMessage = errorData['error'] ?? '회員登録에 실패했습니다';
+          if (errorMessage.contains('error:')) {
+            errorMessage = errorMessage.split('error:').last.trim();
+          }
+          return {'success': false, 'message': errorMessage};
+        } catch (e) {
+          return {'success': false, 'message': '회員登록에 실패했습니다'};
+        }
       }
-    } 
+    }
     // エラー文言をサーバーからもらったまま返す。
     // on TimeoutException catch (_) {
     //   debugPrint('会員登録Timeoutエラー');
     //   return {'success': false, 'message': 'サーバー接続エラー: Timeoutしました。'};
     // }
-     catch (e) {
+    catch (e) {
       debugPrint('会員登録ネットワークエラー: $e');
       throw Exception('ネットワークエラー: ${e.toString()}');
     }
@@ -106,15 +128,14 @@ class AuthService {
       String baseUrl, String userId, String title, String authToken) async {
     final networkService = getIt<NetworkService>();
     try {
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/todos'),
-            headers: networkService.authHeaders(authToken),
-            body: jsonEncode({
-              'userId': userId,
-              'title': title,
-            }),
-          );
+      final response = await http.post(
+        Uri.parse('$baseUrl/todos'),
+        headers: networkService.authHeaders(authToken),
+        body: jsonEncode({
+          'userId': userId,
+          'title': title,
+        }),
+      );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);

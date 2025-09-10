@@ -130,7 +130,7 @@ class TodoModel extends ChangeNotifier {
     }
 
     if (title.isEmpty) {
-      title = "新しいタスク";
+      return null; // 빈 타이틀은 추가하지 않음
     }
 
     try {
@@ -241,25 +241,9 @@ class TodoModel extends ChangeNotifier {
   }
 
   void cancelEdit() {
-    if (_editingTodoId != null) {
-      final todoIndex = _todos.indexWhere((todo) => todo.id == _editingTodoId);
-      if (todoIndex != -1) {
-        _todos[todoIndex].title = _editingText;
-        notifyListeners();
-      }
-    }
+    // 취소 시에는 변경사항을 저장하지 않음
     _editingTodoId = null;
     _editingText = '';
     notifyListeners();
-  }
-
-  // Bug#19: メモリリーク - disposeで解放しない（難易度：高）
-  void simulateMemoryLeak() {
-    if (_todos.length > 20) {
-      for (int i = 0; i < 1000; i++) {
-        List<int> heavyList = List.generate(10000, (index) => index);
-        heavyList.sort();
-      }
-    }
   }
 }

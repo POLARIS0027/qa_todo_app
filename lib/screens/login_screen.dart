@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../screens/settings_screen.dart';
@@ -101,8 +102,6 @@ class _LoginScreenState extends State<LoginScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('パスワード確認は20文字までです'),
-          // バグ#12: パスワード確認のエラーメッセージが赤色になっている(易)
-          backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
       );
@@ -199,8 +198,7 @@ class _LoginScreenState extends State<LoginScreen>
           controller: _tabController,
           tabs: const [
             Tab(text: 'ログイン'),
-            // Bug#1: UIのタイポ「会員登録」->「会院登録」(易)
-            Tab(text: '会院登録'),
+            Tab(text: '会員登録'),
           ],
           onTap: (index) {
             setState(() {
@@ -290,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   counterText: '',
                 ),
-                obscureText: false,
+                obscureText: true,
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -423,7 +421,8 @@ class _LoginScreenState extends State<LoginScreen>
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: const CircularProgressIndicator(strokeWidth: 2),
+                          child:
+                              const CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text('会員登録'),
                 ),

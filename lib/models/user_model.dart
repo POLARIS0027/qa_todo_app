@@ -71,8 +71,11 @@ class UserModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
-    // Bug#10: パスワード確認が一致するか検証しない
-    // if (password != confirmPassword) return false;
+    if (password != confirmPassword) {
+      _setError('パスワードと確認用パスワードが一致しません');
+      _setLoading(false);
+      return false;
+    }
 
     try {
       // Bug#9: 既存メールかどうか確認しない
